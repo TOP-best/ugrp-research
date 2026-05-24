@@ -26,7 +26,7 @@ let USERS = BASE_USERS.map(u=>({...u}));
 let CU=null, pickIdx=-1, weekOff=0, addDate=null;
 let viewItem=null, timerInterval=null, timerStart=null, statPeriod="week";
 let unsubFiles=null;
-let newAvatarB64=null, newBannerB64=null, selEmoji=null, selBanner=null;
+let newAvatarB64=null, newBannerB64=null;
 
 const BANNERS=[
   'linear-gradient(135deg,#1a1a2e,#16213e,#0f3460)',
@@ -40,7 +40,7 @@ const BANNERS=[
 const $=id=>document.getElementById(id);
 const esc=s=>String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
-const dateStr=d=>d.toISOString().slice(0,10);
+const dateStr=d=>{const x=new Date(d);x.setMinutes(x.getMinutes()-x.getTimezoneOffset());return x.toISOString().slice(0,10);};
 const todayStr=()=>dateStr(new Date());
 const DOW=["일","월","화","수","목","금","토"];
 const MONTHS=["1월","2월","3월","4월","5월","6월","7월","8월","9월","10월","11월","12월"];
@@ -48,7 +48,7 @@ const MONTHS=["1월","2월","3월","4월","5월","6월","7월","8월","9월","10
 function fmtSec(s){const h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sc=s%60;return`${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}:${String(sc).padStart(2,"0")}`;}
 function fmtDur(s){if(!s||s<=0)return"0분";if(s<60)return s+"초";const h=Math.floor(s/3600),m=Math.floor((s%3600)/60);return h>0?`${h}시간 ${String(m).padStart(2,"0")}분`:`${m}분`;}
 function weekStart(off=0){const d=new Date();d.setHours(0,0,0,0);const day=d.getDay();const diff=day===0?-6:1-day;d.setDate(d.getDate()+diff+off*7);return d;}
-function showToast(msg){const t=$("toast");t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),2400);}
+function showToast(msg){const t=$("toast");if(!t)return;t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),2400);}
 function switchTab(name){document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));const el=$(`tab-${name}`);if(el)el.classList.add("active");}
 
 async function getSessions(){const snap=await getDocs(query(collection(db,"sessions"),orderBy("start","desc")));return snap.docs.map(d=>({id:d.id,...d.data()}));}
@@ -152,7 +152,7 @@ $("stopBtn").addEventListener("click",async()=>{
   if(!timerStart)return;
   clearInterval(timerInterval);timerInterval=null;
   const end=Date.now(),duration=Math.floor((end-timerStart)/1000);
-  if(duration<5){timerStart=null;resetTimerUI();return;}
+  if(duration<5){await deleteDoc(doc(db,"activeTimers",CU.id));timerStart=null;$("timerNote").value="";resetTimerUI();return;}
   await addDoc(collection(db,"sessions"),{userId:CU.id,start:timerStart,end,duration,note:$("timerNote").value.trim(),date:todayStr(),createdAt:serverTimestamp()});
   await deleteDoc(doc(db,"activeTimers",CU.id));
   timerStart=null;$("timerNote").value="";
@@ -192,7 +192,7 @@ async function renderStats(){
   const all=await getSessions();
   let filtered=all;
   if(statPeriod==="week")filtered=all.filter(s=>s.date>=dateStr(weekStart()));
-  if(statPeriod==="month"){const m=new Date();m.setDate(1);m.setHours(0,0,0,0);const mStr=dateStr(m);filtered=all.filter(s=>s.date>=mStr);}
+  if(statPeriod==="month"){const m=new Date();m.setDate(1);m.setHours(0,0,0,0);filtered=all.filter(s=>s.start>=m.getTime());}
   const byUser={};USERS.forEach(u=>{byUser[u.id]={sec:0,days:new Set(),cnt:0};});
   filtered.forEach(s=>{if(byUser[s.userId]){byUser[s.userId].sec+=s.duration;byUser[s.userId].days.add(s.date);byUser[s.userId].cnt++;}});
   const ranked=USERS.map(u=>({u,sec:byUser[u.id].sec,days:byUser[u.id].days.size})).sort((a,b)=>b.sec-a.sec);
@@ -324,33 +324,63 @@ async function delComment(cid){
 // ════ PROFILE ════
 const ANIMAL_EMOJIS=['🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼','🐨','🐯','🦁','🐮','🐷','🐸','🐵','🐔','🐧','🐦','🦆','🦉','🦋','🐢','🦖','🐬','🦈','🐙'];
 const OTHER_EMOJIS=['🔬','🧮','📐','🧠','⚡','🌌','🔭','🧪','📊','🎯','🚀','💡','🏆','🎲','🌠','🔮'];
+let selEmoji=null, selBanner=null;
 
+function setDisplay(el, display){if(el)el.style.display=display;}
+function setText(el, text){if(el)el.textContent=text;}
+function hideIfExists(id){const el=$(id);if(el)el.style.display="none";}
+function updateUserCache(update){
+  if(!CU)return;
+  Object.assign(CU, update);
+  const idx=USERS.findIndex(u=>u.id===CU.id);
+  if(idx>=0)Object.assign(USERS[idx], update);
+}
+function updateMemberAvatar(){
+  const idx=USERS.findIndex(u=>CU&&u.id===CU.id);
+  if(idx<0)return;
+  const avEl=$(`mpAv${idx}`);
+  if(!avEl)return;
+  if(CU.avatarImg)avEl.innerHTML=`<img src="${CU.avatarImg}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+  else avEl.textContent=CU.avatar||CU.initial;
+}
 function applyProfileDisplay(){
-  const img=$("profileAvatarImg"), emoji=$("profileAvatarEmoji");
-  if(CU.avatarImg){img.src=CU.avatarImg;img.style.display="";emoji.style.display="none";}
-  else{img.style.display="none";emoji.style.display="";emoji.textContent=CU.avatar||"🔬";}
-  if(CU.bannerImg)$("profileBanner").style.background=`url(${CU.bannerImg}) center/cover`;
-  else $("profileBanner").style.background=CU.banner||BANNERS[0];
+  if(!CU)return;
+  const img=$("profileAvatarImg"), emoji=$("profileAvatarEmoji"), banner=$("profileBanner");
+  if(img&&emoji){
+    if(CU.avatarImg){img.src=CU.avatarImg;img.style.display="";emoji.style.display="none";}
+    else{img.removeAttribute("src");img.style.display="none";emoji.style.display="";emoji.textContent=CU.avatar||"🔬";}
+  }
+  if(banner)banner.style.background=CU.bannerImg?`url(${CU.bannerImg}) center/cover`:(CU.banner||BANNERS[0]);
+}
+
+function readImageFile(input, cb){
+  const file=input?.files?.[0];
+  if(!file)return;
+  if(!file.type.startsWith("image/")){showToast("이미지 파일만 업로드할 수 있습니다");input.value="";return;}
+  const reader=new FileReader();
+  reader.onload=e=>cb(e.target.result);
+  reader.readAsDataURL(file);
 }
 
 function openProfile(){
   if(!CU)return;
   document.querySelectorAll(".nav-btn").forEach(b=>b.classList.remove("active"));
-  $("profileEditForm").style.display="none";
-  $("avatarPickPanel").style.display="none";
-  $("bannerPickPanel").style.display="none";
-  $("bioEditForm").style.display="none";
+  hideIfExists("profileEditForm");
+  hideIfExists("avatarPickPanel");
+  hideIfExists("bannerPickPanel");
+  hideIfExists("bioEditForm");
   newAvatarB64=null; newBannerB64=null; selEmoji=null; selBanner=null;
   applyProfileDisplay();
-  $("profileName").textContent=CU.name;
-  $("profileRole").textContent=CU.role||"Researcher";
-  if(CU.bio){$("profileBio").textContent=CU.bio;$("profileBio").classList.remove("empty");}
-  else{$("profileBio").textContent="소개를 작성해보세요";$("profileBio").classList.add("empty");}
+  setText($("profileName"),CU.name);
+  setText($("profileRole"),CU.role||"Researcher");
+  if(CU.bio){setText($("profileBio"),CU.bio);$("profileBio")?.classList.remove("empty");}
+  else{setText($("profileBio"),"소개를 작성해보세요");$("profileBio")?.classList.add("empty");}
   renderProfileStats();
   switchTab("profile");
 }
 
 async function renderProfileStats(){
+  if(!CU)return;
   const sessions=await getSessions();
   const mine=sessions.filter(s=>s.userId===CU.id);
   const totalSec=mine.reduce((a,s)=>a+s.duration,0);
@@ -365,126 +395,78 @@ async function renderProfileStats(){
     <div class="pr-item"><div><div class="pr-date">${s.date}</div>${s.note?`<div class="pr-note">${esc(s.note.substring(0,30))}</div>`:""}</div><div class="pr-dur">${fmtDur(s.duration)}</div></div>`).join(""):`<div class="pr-empty">아직 기록이 없습니다</div>`);
 }
 
-$("profileBackBtn").addEventListener("click",()=>{
+$("profileBackBtn")?.addEventListener("click",()=>{
   switchTab("timer");
   document.querySelector(".nav-btn[data-tab='timer']")?.classList.add("active");
 });
 
-// 배너 클릭 → 배너 선택 패널
-$("profileBanner").addEventListener("click", e=>{
-  if(e.target.closest(".profile-back-btn")) return;
-  const panel=$("bannerPickPanel");
-  const isOpen=panel.style.display!=="none";
-  $("avatarPickPanel").style.display="none";
-  $("profileEditForm").style.display="none";
-  if(isOpen){ panel.style.display="none"; return; }
-  // 배너 프리셋 렌더
-  selBanner=CU.banner||BANNERS[0];
-  $("bannerPresets").innerHTML=BANNERS.map((b,i)=>`
-    <div class="banner-preset-btn${b===selBanner?' selected':''}" data-i="${i}" style="background:${b}"></div>`).join("");
-  $("bannerPresets").querySelectorAll(".banner-preset-btn").forEach(btn=>{
-    btn.addEventListener("click",()=>{
-      selBanner=BANNERS[+btn.dataset.i];
-      $("bannerPresets").querySelectorAll(".banner-preset-btn").forEach(b=>b.classList.toggle("selected",b===btn));
-      newBannerB64=null; $("pefBannerPreview").style.display="none";
-      $("profileBanner").style.background=selBanner;
-    });
+$("bannerEditOverlay")?.addEventListener("click",e=>{e.stopPropagation();$("bannerFileInput")?.click();});
+$("profileBanner")?.addEventListener("click",e=>{
+  if(e.target.closest(".profile-back-btn"))return;
+  if(e.target.closest("#bannerEditOverlay"))return;
+});
+
+$("bannerFileInput")?.addEventListener("change",async e=>{
+  readImageFile(e.currentTarget, async data=>{
+    newBannerB64=data;
+    $("pefBannerPreviewImg")&&( $("pefBannerPreviewImg").src=data );
+    setDisplay($("pefBannerPreview"),"flex");
+    updateUserCache({bannerImg:data,banner:null});
+    await setDoc(doc(db,"profiles",CU.id),{bannerImg:data,banner:null},{merge:true});
+    applyProfileDisplay();
+    showToast("배경 사진이 저장됐습니다");
   });
-  $("pefBannerPreview").style.display="none";
-  panel.style.display="block";
 });
 
-// 배너 업로드
-$("bannerUploadBtn").addEventListener("click",()=>$("bannerFileInput").click());
-$("bannerFileInput").addEventListener("change",()=>{
-  const f=$("bannerFileInput").files[0]; if(!f)return;
-  Object.assign(new FileReader(),{onload:e=>{newBannerB64=e.target.result;$("profileBanner").style.background=`url(${newBannerB64}) center/cover`;$("pefBannerPreviewImg").src=newBannerB64;$("pefBannerPreview").style.display="flex";selBanner=null;$("bannerPresets").querySelectorAll(".banner-preset-btn").forEach(b=>b.classList.remove("selected"));}}).readAsDataURL(f);
-});
-$("clearBannerBtn").addEventListener("click",()=>{newBannerB64=null;$("pefBannerPreview").style.display="none";$("bannerFileInput").value="";applyProfileDisplay();});
-$("bannerPickCancel").addEventListener("click",()=>{$("bannerPickPanel").style.display="none";newBannerB64=null;selBanner=null;applyProfileDisplay();});
-$("bannerPickSave").addEventListener("click",async()=>{
-  const update={};
-  if(newBannerB64){update.bannerImg=newBannerB64;CU.bannerImg=newBannerB64;delete CU.banner;}
-  else if(selBanner){update.bannerImg=null;update.banner=selBanner;CU.banner=selBanner;CU.bannerImg=null;}
-  if(Object.keys(update).length){await setDoc(doc(db,"profiles",CU.id),update,{merge:true});}
-  $("bannerPickPanel").style.display="none";newBannerB64=null;selBanner=null;applyProfileDisplay();
-});
-
-// 아바타 클릭 → 아바타 선택 패널
-$("profileAvatar").addEventListener("click",()=>{
-  const panel=$("avatarPickPanel");
-  const isOpen=panel.style.display!=="none";
-  $("bannerPickPanel").style.display="none";
-  $("profileEditForm").style.display="none";
-  if(isOpen){panel.style.display="none";return;}
-  selEmoji=CU.avatar||null;
-  $("animalEmojiGrid").innerHTML=ANIMAL_EMOJIS.map(e=>`<button class="emoji-btn${e===selEmoji?' selected':''}" data-e="${e}">${e}</button>`).join("");
-  $("otherEmojiGrid").innerHTML=OTHER_EMOJIS.map(e=>`<button class="emoji-btn${e===selEmoji?' selected':''}" data-e="${e}">${e}</button>`).join("");
-  [$("animalEmojiGrid"),$("otherEmojiGrid")].forEach(grid=>{
-    grid.querySelectorAll(".emoji-btn").forEach(btn=>{
-      btn.addEventListener("click",()=>{
-        selEmoji=btn.dataset.e; newAvatarB64=null;
-        $("pefAvatarPreview").style.display="none"; $("avatarFileInput").value="";
-        document.querySelectorAll(".emoji-btn").forEach(b=>b.classList.toggle("selected",b===btn));
-        $("profileAvatarEmoji").textContent=selEmoji; $("profileAvatarImg").style.display="none"; $("profileAvatarEmoji").style.display="";
-      });
-    });
+$("avatarEditOverlay")?.addEventListener("click",e=>{e.stopPropagation();$("avatarFileInput")?.click();});
+$("profileAvatar")?.addEventListener("click",()=>$("avatarFileInput")?.click());
+$("avatarFileInput")?.addEventListener("change",async e=>{
+  readImageFile(e.currentTarget, async data=>{
+    newAvatarB64=data;
+    $("pefAvatarPreviewImg")&&( $("pefAvatarPreviewImg").src=data );
+    setDisplay($("pefAvatarPreview"),"flex");
+    updateUserCache({avatarImg:data,avatar:null});
+    await setDoc(doc(db,"profiles",CU.id),{avatarImg:data,avatar:null},{merge:true});
+    applyProfileDisplay();
+    updateMemberAvatar();
+    showToast("프로필 사진이 저장됐습니다");
   });
-  $("pefAvatarPreview").style.display="none";
-  panel.style.display="block";
 });
 
-// 아바타 업로드
-$("avatarUploadBtn").addEventListener("click",()=>$("avatarFileInput").click());
-$("avatarFileInput").addEventListener("change",()=>{
-  const f=$("avatarFileInput").files[0]; if(!f)return;
-  Object.assign(new FileReader(),{onload:e=>{newAvatarB64=e.target.result;selEmoji=null;$("profileAvatarImg").src=newAvatarB64;$("profileAvatarImg").style.display="";$("profileAvatarEmoji").style.display="none";$("pefAvatarPreviewImg").src=newAvatarB64;$("pefAvatarPreview").style.display="flex";document.querySelectorAll(".emoji-btn").forEach(b=>b.classList.remove("selected"));}}).readAsDataURL(f);
-});
-$("clearAvatarBtn").addEventListener("click",()=>{newAvatarB64=null;selEmoji=null;$("pefAvatarPreview").style.display="none";$("avatarFileInput").value="";applyProfileDisplay();});
-$("avatarPickCancel").addEventListener("click",()=>{$("avatarPickPanel").style.display="none";newAvatarB64=null;selEmoji=null;applyProfileDisplay();});
-$("avatarPickSave").addEventListener("click",async()=>{
-  const update={};
-  if(newAvatarB64){update.avatarImg=newAvatarB64;CU.avatarImg=newAvatarB64;delete CU.avatar;}
-  else if(selEmoji){update.avatar=selEmoji;update.avatarImg=null;CU.avatar=selEmoji;CU.avatarImg=null;}
-  if(Object.keys(update).length){await setDoc(doc(db,"profiles",CU.id),update,{merge:true});}
-  const idx=USERS.findIndex(u=>u.id===CU.id);
-  if(idx>=0){if(CU.avatarImg)USERS[idx].avatarImg=CU.avatarImg;if(CU.avatar)USERS[idx].avatar=CU.avatar;}
-  $("avatarPickPanel").style.display="none";newAvatarB64=null;selEmoji=null;applyProfileDisplay();
-});
+window.clearAvatarPreview=()=>{newAvatarB64=null;setDisplay($("pefAvatarPreview"),"none");const input=$("avatarFileInput");if(input)input.value="";applyProfileDisplay();};
+window.clearBannerPreview=()=>{newBannerB64=null;setDisplay($("pefBannerPreview"),"none");const input=$("bannerFileInput");if(input)input.value="";applyProfileDisplay();};
 
-// 소개 편집
-$("bioEditBtn").addEventListener("click",()=>{
-  $("bioEditForm").style.display="block";
+$("bioEditBtn")?.addEventListener("click",()=>{
+  setDisplay($("bioEditForm"),"block");
   $("bioInput").value=CU.bio||"";
   $("bioInput").focus();
 });
-$("bioCancelBtn").addEventListener("click",()=>{$("bioEditForm").style.display="none";});
-$("bioSaveBtn").addEventListener("click",async()=>{
+$("bioCancelBtn")?.addEventListener("click",()=>setDisplay($("bioEditForm"),"none"));
+$("bioSaveBtn")?.addEventListener("click",async()=>{
   const bio=$("bioInput").value.trim();
   await setDoc(doc(db,"profiles",CU.id),{bio},{merge:true});
-  CU.bio=bio;
-  if(bio){$("profileBio").textContent=bio;$("profileBio").classList.remove("empty");}
-  else{$("profileBio").textContent="소개를 작성해보세요";$("profileBio").classList.add("empty");}
-  $("bioEditForm").style.display="none";
+  updateUserCache({bio});
+  if(bio){setText($("profileBio"),bio);$("profileBio")?.classList.remove("empty");}
+  else{setText($("profileBio"),"소개를 작성해보세요");$("profileBio")?.classList.add("empty");}
+  setDisplay($("bioEditForm"),"none");
 });
 
-// 이름/비번 편집
-$("profileEditForm") && [$("pefCancel"),$("pefSave")].forEach(el=>el&&el.addEventListener("click", async(e)=>{
-  if(e.target.id==="pefCancel"){$("profileEditForm").style.display="none";return;}
-  const name=$("pefName").value.trim(), pw=$("pefPw").value.trim();
+[$("pefCancel"),$("pefSave")].forEach(el=>el?.addEventListener("click",async e=>{
+  if(e.currentTarget.id==="pefCancel"){setDisplay($("profileEditForm"),"none");return;}
+  const name=$("pefName")?.value.trim()||CU.name;
+  const pw=$("pefPw")?.value.trim();
   if(!name){$("pefMsg").style.color="#f87171";$("pefMsg").textContent="이름을 입력해주세요";return;}
   const update={name}; if(pw)update.pw=pw;
   await setDoc(doc(db,"profiles",CU.id),update,{merge:true});
-  CU.name=name; if(pw)CU.pw=pw;
+  updateUserCache(update);
+  setText($("chipName"),name); setText($("profileName"),name);
   const idx=USERS.findIndex(u=>u.id===CU.id);
-  if(idx>=0){USERS[idx].name=name;if(pw)USERS[idx].pw=pw;}
-  $("chipName").textContent=name; $("profileName").textContent=name;
   const nameEl=$(`mpName${idx}`); if(nameEl)nameEl.textContent=name;
-  $("pefMsg").style.color="#10b981";$("pefMsg").textContent="저장됐습니다 ✓";
-  setTimeout(()=>$("profileEditForm").style.display="none",1000);
+  if($("pefMsg")){$("pefMsg").style.color="#10b981";$("pefMsg").textContent="저장됐습니다 ✓";}
+  setTimeout(()=>setDisplay($("profileEditForm"),"none"),1000);
 }));
 
-// ════ INIT ════// ════ INIT ════
+// ════ INIT ════
 
 // Canvas 배경
 const canvas = document.getElementById('bgCanvas');

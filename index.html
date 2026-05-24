@@ -130,17 +130,61 @@
     </div>
   </div>
 
-  <!-- FILES -->
+  <!-- FILES: 달력 -->
   <div class="tab" id="tab-files">
-    <div class="cal-topbar">
-      <button class="cal-nav-btn" id="calPrev"><i class="ti ti-chevron-left"></i></button>
-      <span class="cal-title" id="calTitle"></span>
-      <button class="cal-nav-btn" id="calToday">오늘</button>
-      <button class="cal-nav-btn" id="calNext"><i class="ti ti-chevron-right"></i></button>
-      <div style="flex:1"></div>
-      <button class="fab-add" id="fabAdd"><i class="ti ti-plus"></i> 자료 추가</button>
+    <div class="cal-scroll-wrap" id="calScrollWrap">
+      <div id="calMonthsContainer"></div>
     </div>
-    <div class="cal-scroll"><div class="cal-row" id="calRow"></div></div>
+  </div>
+
+  <!-- DAY DETAIL PAGE -->
+  <div class="tab" id="tab-day">
+    <div class="day-detail-header">
+      <button class="day-back-btn" id="dayBackBtn"><i class="ti ti-arrow-left"></i> 달력으로</button>
+      <span class="day-detail-title" id="dayDetailTitle"></span>
+    </div>
+    <div class="day-detail-body">
+      <!-- 왼쪽: 자료 목록 -->
+      <div class="day-left">
+        <div class="day-member-tabs" id="dayMemberTabs"></div>
+        <div class="day-file-list" id="dayFileList"></div>
+      </div>
+      <!-- 오른쪽: 업로드 -->
+      <div class="day-right">
+        <div class="day-right-title">자료 추가</div>
+        <div class="ff"><label>URL <span class="req">*</span></label><input type="url" id="dfUrl" placeholder="https://drive.google.com/..."></div>
+        <div class="ff"><label>제목 <span class="req">*</span></label><input type="text" id="dfTitle" placeholder="자료 제목"></div>
+        <div class="ff"><label>종류</label>
+          <select id="dfType">
+            <option value="gdrive">구글 드라이브</option>
+            <option value="gdoc">구글 Docs</option>
+            <option value="gsheet">구글 Sheets</option>
+            <option value="gslide">구글 Slides</option>
+            <option value="notion">노션</option>
+            <option value="paper">논문 / PDF</option>
+            <option value="github">GitHub</option>
+            <option value="etc">기타</option>
+          </select>
+        </div>
+        <div class="ff"><label>폴더</label>
+          <div class="folder-select-row">
+            <select id="dfFolder">
+              <option value="">선택 안함</option>
+            </select>
+            <button class="folder-new-btn" id="folderNewBtn"><i class="ti ti-folder-plus"></i> 새 폴더</button>
+          </div>
+        </div>
+        <div class="ff"><label>메모</label><textarea id="dfNote" placeholder="간단한 설명..."></textarea></div>
+        <button class="btn-primary" id="dfSave" style="width:100%">추가</button>
+        <div id="folderCreateForm" style="display:none;margin-top:12px">
+          <div class="ff"><label>폴더 이름</label><input type="text" id="folderNameInput" placeholder="폴더 이름..."></div>
+          <div style="display:flex;gap:8px">
+            <button class="btn-cancel" id="folderCreateCancel" style="flex:1">취소</button>
+            <button class="btn-primary" id="folderCreateSave" style="flex:2">만들기</button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- PROFILE PAGE (탭처럼 전환) -->

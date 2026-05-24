@@ -85,7 +85,7 @@ html,body { height:100%; font-family:var(--font); background:var(--bg); color:va
   height:100vh;
   display:flex; flex-direction:column;
   align-items:center; justify-content:space-evenly;
-  padding:10vh 20px 20vh;
+  padding:10vh 20px 25vh;
 }
 .login-quote { text-align:center; width:100%; padding:0 40px; }
 .login-quote blockquote {
@@ -94,7 +94,12 @@ html,body { height:100%; font-family:var(--font); background:var(--bg); color:va
   font-weight:800; font-style:italic;
   color:#fff; letter-spacing:-2px; line-height:1.1;
   white-space:nowrap;
-  text-shadow: 0 0 60px rgba(255,255,255,0.08);
+  text-shadow: 0 0 40px rgba(255,255,255,0.35), 0 0 80px rgba(255,255,255,0.12);
+  animation: quoteGlow 3s ease-in-out infinite alternate;
+}
+@keyframes quoteGlow {
+  from { text-shadow: 0 0 30px rgba(255,255,255,0.25), 0 0 60px rgba(255,255,255,0.08); }
+  to   { text-shadow: 0 0 50px rgba(255,255,255,0.45), 0 0 100px rgba(255,255,255,0.18); }
 }
 
 /* LOGIN HERO */
@@ -548,3 +553,65 @@ html,body { height:100%; font-family:var(--font); background:var(--bg); color:va
 .app-cancel { flex:1; padding:10px; background:none; border:1px solid rgba(255,255,255,.1); border-radius:7px; color:rgba(255,255,255,.5); font-size:13px; cursor:pointer; font-family:var(--font); }
 .app-save { flex:2; padding:10px; background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.2); border-radius:7px; color:#fff; font-size:13px; font-weight:700; cursor:pointer; font-family:var(--font); }
 .app-save:hover { background:rgba(255,255,255,.18); }
+
+/* ════ 달력 그리드 ════ */
+#tab-files { overflow-y:auto; padding:24px; }
+.cal-scroll-wrap { max-width:900px; margin:0 auto; }
+#calMonthsContainer { display:flex; flex-direction:column; gap:40px; padding-bottom:60px; }
+.cal-month-block {}
+.cal-month-title { font-size:16px; font-weight:800; color:#fff; letter-spacing:-.3px; margin-bottom:12px; padding-bottom:10px; border-bottom:1px solid rgba(255,255,255,0.07); }
+.cal-month-grid {}
+.cal-dow-row { display:grid; grid-template-columns:repeat(7,1fr); margin-bottom:6px; }
+.cal-dow-row span { text-align:center; font-size:11px; font-weight:600; color:rgba(255,255,255,.3); text-transform:uppercase; letter-spacing:.5px; padding:4px 0; }
+.cal-cells { display:grid; grid-template-columns:repeat(7,1fr); gap:4px; }
+.cal-cell { min-height:64px; border-radius:8px; padding:8px 6px; cursor:pointer; position:relative; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.05); transition:all .15s; display:flex; flex-direction:column; align-items:flex-start; gap:4px; }
+.cal-cell:hover { background:rgba(255,255,255,0.07); border-color:rgba(255,255,255,0.15); }
+.cal-cell.empty { background:transparent; border-color:transparent; cursor:default; }
+.cal-today { background:rgba(255,255,255,0.08) !important; border-color:rgba(255,255,255,0.3) !important; box-shadow:0 0 12px rgba(255,255,255,0.06); }
+.cal-day-num { font-size:13px; font-weight:700; color:rgba(255,255,255,.7); }
+.cal-today .cal-day-num { color:#fff; }
+.cal-dot-count { font-size:10px; font-weight:700; background:rgba(255,255,255,0.15); color:#fff; border-radius:10px; padding:1px 6px; }
+
+/* ════ DAY DETAIL ════ */
+#tab-day { display:flex; flex-direction:column; overflow:hidden; }
+.day-detail-header { display:flex; align-items:center; gap:16px; padding:14px 24px; border-bottom:1px solid rgba(255,255,255,0.07); flex-shrink:0; }
+.day-back-btn { display:flex; align-items:center; gap:6px; padding:7px 14px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1); border-radius:6px; color:rgba(255,255,255,.7); cursor:pointer; font-size:13px; font-weight:500; transition:all .15s; font-family:var(--font); }
+.day-back-btn:hover { background:rgba(255,255,255,0.12); color:#fff; }
+.day-detail-title { font-size:16px; font-weight:800; color:#fff; letter-spacing:-.3px; }
+.day-detail-body { display:flex; flex:1; overflow:hidden; }
+
+/* 왼쪽 자료 목록 */
+.day-left { flex:1; overflow-y:auto; padding:20px 20px 20px 24px; border-right:1px solid rgba(255,255,255,0.07); }
+.day-member-tabs { display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap; }
+.day-member-tab { display:flex; align-items:center; gap:8px; padding:8px 14px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:8px; color:rgba(255,255,255,.5); cursor:pointer; font-size:13px; font-weight:600; transition:all .15s; font-family:var(--font); }
+.day-member-tab:hover { background:rgba(255,255,255,0.08); color:#fff; }
+.day-member-tab.active { background:rgba(255,255,255,0.1); color:#fff; }
+.dmt-av { width:24px; height:24px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700; }
+.day-file-list { display:flex; flex-direction:column; gap:4px; }
+.day-empty { font-size:13px; color:rgba(255,255,255,.2); padding:20px 0; text-align:center; }
+.day-folder { border-radius:8px; overflow:hidden; border:1px solid rgba(255,255,255,0.07); margin-bottom:4px; }
+.day-folder-row { display:flex; align-items:center; gap:10px; padding:10px 14px; background:rgba(255,255,255,0.05); cursor:pointer; }
+.day-folder-icon { color:rgba(255,255,255,.5); font-size:16px; }
+.day-folder-name { flex:1; font-size:13px; font-weight:600; color:#fff; }
+.day-folder-count { font-size:11px; color:rgba(255,255,255,.3); }
+.day-folder-toggle { background:none; border:none; color:rgba(255,255,255,.4); cursor:pointer; font-size:14px; padding:2px; }
+.day-folder-children { padding:6px 8px; background:rgba(0,0,0,0.2); }
+.day-empty-folder { font-size:12px; color:rgba(255,255,255,.2); padding:8px 6px; }
+.day-file-row { display:flex; align-items:center; gap:10px; padding:10px 14px; border-radius:8px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.05); cursor:pointer; transition:all .15s; }
+.day-file-row:hover { background:rgba(255,255,255,0.07); border-color:rgba(255,255,255,0.12); }
+.day-file-row.indent { margin-left:8px; }
+.day-file-icon { color:rgba(255,255,255,.4); font-size:15px; flex-shrink:0; }
+.day-file-name { flex:1; font-size:13px; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.day-file-note { font-size:11px; color:rgba(255,255,255,.3); white-space:nowrap; }
+.day-file-del { background:none; border:none; color:rgba(255,255,255,.2); cursor:pointer; font-size:13px; padding:3px; transition:color .15s; }
+.day-file-del:hover { color:#f87171; }
+.dragging { opacity:.4; }
+.drag-over { border-color:rgba(255,255,255,0.4) !important; background:rgba(255,255,255,0.1) !important; }
+
+/* 오른쪽 업로드 */
+.day-right { width:320px; flex-shrink:0; overflow-y:auto; padding:20px 24px 20px 20px; }
+.day-right-title { font-size:13px; font-weight:700; color:rgba(255,255,255,.5); text-transform:uppercase; letter-spacing:.6px; margin-bottom:16px; }
+.folder-select-row { display:flex; gap:8px; }
+.folder-select-row select { flex:1; }
+.folder-new-btn { padding:9px 12px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1); border-radius:8px; color:rgba(255,255,255,.6); font-size:12px; cursor:pointer; white-space:nowrap; transition:all .15s; font-family:var(--font); }
+.folder-new-btn:hover { background:rgba(255,255,255,0.12); color:#fff; }

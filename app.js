@@ -128,7 +128,7 @@ document.querySelectorAll(".nav-btn").forEach(btn=>{
     btn.classList.add("active");
     switchTab(btn.dataset.tab);
     if(btn.dataset.tab==="stats")renderStats();
-    if(btn.dataset.tab==="files")renderCal();
+    if(btn.dataset.tab==="files")renderCalMonths();
   });
 });
 
@@ -223,104 +223,228 @@ async function renderStats(){
     }).join("")}</div></div>`).join(""):`<div class="empty-msg">기록 없음</div>`;
 }
 
-// ════ CALENDAR ════
+// ════ CALENDAR (월별 그리드) ════
 const TYPE_ICONS={gdrive:"ti-brand-google-drive",gdoc:"ti-file-text",gsheet:"ti-table",gslide:"ti-presentation",notion:"ti-note",paper:"ti-file-description",github:"ti-brand-github",etc:"ti-link"};
 const TYPE_COLORS={gdrive:["#E6F1FB","#185FA5"],gdoc:["#E6F1FB","#185FA5"],gsheet:["#E1F5EE","#0F6E56"],gslide:["#FAEEDA","#854F0B"],notion:["#F1EFE8","#444"],paper:["#FEF3C7","#92400E"],github:["#F1EFE8","#444"],etc:["#F3E8FF","#6D28D9"]};
 
-function subscribeFiles(){if(unsubFiles)unsubFiles();unsubFiles=onSnapshot(collection(db,"fileItems"),()=>renderCal());}
-$("calPrev").addEventListener("click",()=>{weekOff--;renderCal();});
-$("calNext").addEventListener("click",()=>{weekOff++;renderCal();});
-$("calToday").addEventListener("click",()=>{weekOff=0;renderCal();});
-$("fabAdd").addEventListener("click",()=>{addDate=todayStr();openAddModal();});
+const CAL_START={y:2026,m:0}; // 2026년 1월부터
+const CAL_END={y:2027,m:2};   // 2027년 3월까지
 
-async function renderCal(){
+function subscribeFiles(){if(unsubFiles)unsubFiles();unsubFiles=onSnapshot(collection(db,"fileItems"),()=>{renderCalMonths();if(currentDayDate)renderDayDetail(currentDayDate);});}
+
+let currentDayDate=null;
+let currentDayMember=null;
+let dayFolders=[];  // {id, name, order}
+let dayFiles=[];    // {id, title, url, type, folderId, order, authorId, note}
+let dragSrcId=null;
+
+async function renderCalMonths(){
   if(!CU)return;
-  const days=getWeekDays();const f=days[0],l=days[6];
-  $("calTitle").textContent=f.getMonth()===l.getMonth()?`${f.getFullYear()}년 ${MONTHS[f.getMonth()]} ${f.getDate()}일 — ${l.getDate()}일`:`${f.getFullYear()}년 ${MONTHS[f.getMonth()]} ${f.getDate()}일 — ${MONTHS[l.getMonth()]} ${l.getDate()}일`;
-  const items=await getFileItems();const row=$("calRow");row.innerHTML="";
-  days.forEach(d=>{
-    const ds=dateStr(d),isToday=ds===todayStr();
-    const dayItems=items.filter(it=>it.date===ds);
-    const col=document.createElement("div");col.className="day-col";
-    col.innerHTML=`<div class="day-hd${isToday?" today":""}"><div class="day-dow">${DOW[d.getDay()]}</div><div class="day-dom">${d.getDate()}</div></div>
-      <div class="day-body">${dayItems.map(it=>chipHtml(it)).join("")}<button class="add-chip-btn" data-date="${ds}"><i class="ti ti-plus" style="font-size:11px"></i> 추가</button></div>`;
-    row.appendChild(col);
-  });
-  row.querySelectorAll(".add-chip-btn").forEach(btn=>{btn.addEventListener("click",()=>{addDate=btn.dataset.date;openAddModal();});});
-  row.querySelectorAll(".file-chip").forEach(chip=>{chip.addEventListener("click",()=>openViewer(chip.dataset.id));});
-  if(weekOff===0)setTimeout(()=>{const tc=row.querySelector(`[data-date="${todayStr()}"]`);if(tc)tc.closest(".day-col")?.scrollIntoView({behavior:"smooth",block:"nearest",inline:"center"});},60);
-}
-function getWeekDays(){const mon=weekStart(weekOff);return Array.from({length:7},(_,i)=>{const d=new Date(mon);d.setDate(mon.getDate()+i);return d;});}
-function chipHtml(it){
-  const u=USERS.find(x=>x.id===it.authorId);const icon=TYPE_ICONS[it.type]||"ti-link";const nc=(it.comments||[]).length;
-  return`<div class="file-chip" data-id="${it.id}"><i class="ti ${icon} chip-ico"></i><span class="chip-name" title="${esc(it.title)}">${esc(it.title)}</span>${nc>0?`<span class="chip-nc"><i class="ti ti-message-circle" style="font-size:10px"></i>${nc}</span>`:""}<div class="chip-author" style="background:${u?u.bg:"#333"};color:${u?u.color:"#fff"}">${u?(u.avatar||u.initial):"?"}</div></div>`;
-}
+  const items=await getFileItems();
+  const container=$("calMonthsContainer");
+  // 날짜별 자료 수 맵
+  const dateCount={};
+  items.forEach(it=>{dateCount[it.date]=(dateCount[it.date]||0)+1;});
+  const todayS=todayStr();
+  const months=[];
+  let y=CAL_START.y,m=CAL_START.m;
+  while(y<CAL_END.y||(y===CAL_END.y&&m<=CAL_END.m)){months.push({y,m});m++;if(m>11){m=0;y++;}}
 
-// ADD MODAL
-function openAddModal(){$("addModalTitle").textContent=`자료 추가 — ${addDate}`;$("fUrl").value="";$("fTitle").value="";$("fNote").value="";$("addModal").style.display="flex";}
-$("addClose").addEventListener("click",()=>$("addModal").style.display="none");
-$("addCancel").addEventListener("click",()=>$("addModal").style.display="none");
-$("addSave").addEventListener("click",async()=>{
-  const url=$("fUrl").value.trim(),title=$("fTitle").value.trim();
-  if(!url||!title){showToast("URL과 제목을 입력해주세요");return;}
-  $("addSave").disabled=true;
-  await addDoc(collection(db,"fileItems"),{type:$("fType").value,title,url,note:$("fNote").value.trim(),authorId:CU.id,date:addDate,comments:[],createdAt:serverTimestamp()});
-  $("addModal").style.display="none";$("addSave").disabled=false;
-  showToast("자료가 추가됐습니다 🔗");renderCal();
-});
-
-// VIEWER
-async function openViewer(id){
-  const items=await getFileItems();viewItem=items.find(it=>it.id===id);if(!viewItem)return;
-  const u=USERS.find(x=>x.id===viewItem.authorId);
-  $("vTitle").textContent=viewItem.title;
-  $("vMeta").textContent=`${u?u.name:"?"} · ${viewItem.date}${viewItem.note?" · "+viewItem.note:""}`;
-  $("vOpenLink").href=viewItem.url;
-  const tc=TYPE_COLORS[viewItem.type]||["#E6F1FB","#185FA5"];const ico=TYPE_ICONS[viewItem.type]||"ti-link";
-  $("vTypeIcon").style.background=tc[0];$("vTypeIcon").innerHTML=`<i class="ti ${ico}" style="color:${tc[1]}"></i>`;
-  $("vDeleteBtn").style.display=(CU&&viewItem.authorId===CU.id)?"":"none";
-  const embed=getEmbedUrl(viewItem.url);
-  $("viewerPane").innerHTML=embed?`<iframe src="${esc(embed)}" allow="autoplay"></iframe>`:`<div class="no-preview"><i class="ti ti-external-link"></i><p>미리보기 미지원</p><a href="${esc(viewItem.url)}" target="_blank" rel="noopener">원본 열기</a></div>`;
-  renderComments();$("viewerModal").style.display="flex";
-}
-function getEmbedUrl(url){
-  const df=url.match(/drive\.google\.com\/file\/d\/([^/?]+)/);if(df)return`https://drive.google.com/file/d/${df[1]}/preview`;
-  const do2=url.match(/drive\.google\.com\/open\?id=([^&]+)/);if(do2)return`https://drive.google.com/file/d/${do2[1]}/preview`;
-  const gdoc=url.match(/docs\.google\.com\/(document|spreadsheets|presentation)\/d\/([^/?]+)/);if(gdoc)return url.replace(/\/(edit|pub|view).*$/,"/preview");
-  return null;
-}
-$("viewerClose").addEventListener("click",()=>$("viewerModal").style.display="none");
-$("vDeleteBtn").addEventListener("click",async()=>{
-  if(!viewItem||!CU||viewItem.authorId!==CU.id)return;
-  if(!confirm("이 자료를 삭제할까요?"))return;
-  await deleteDoc(doc(db,"fileItems",viewItem.id));
-  $("viewerModal").style.display="none";renderCal();showToast("삭제됐습니다");
-});
-
-function renderComments(){
-  if(!viewItem)return;
-  const comments=viewItem.comments||[];
-  if(!comments.length){$("commentsList").innerHTML=`<div class="cs-empty">아직 코멘트가 없습니다</div>`;return;}
-  $("commentsList").innerHTML=comments.map(c=>{
-    const u=USERS.find(x=>x.id===c.userId);const canDel=CU&&c.userId===CU.id;
-    return`<div class="comment-item"><div class="ci-meta"><div class="ci-av" style="background:${u?u.bg:"#333"};color:${u?u.color:"#fff"}">${u?(u.avatar||u.initial):"?"}</div><span class="ci-name">${u?u.name:"?"}</span><span class="ci-date">${c.date}</span></div><div class="ci-text">${esc(c.text)}${canDel?`<button class="ci-del" data-cid="${c.id}"><i class="ti ti-x"></i></button>`:""}</div></div>`;
+  container.innerHTML=months.map(({y,m})=>{
+    const firstDay=new Date(y,m,1).getDay(); // 0=일
+    const totalDays=new Date(y,m+1,0).getDate();
+    const startOffset=(firstDay+6)%7; // 월요일 시작
+    let cells="";
+    for(let i=0;i<startOffset;i++)cells+=`<div class="cal-cell empty"></div>`;
+    for(let d=1;d<=totalDays;d++){
+      const ds=`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      const cnt=dateCount[ds]||0;
+      const isToday=ds===todayS;
+      cells+=`<div class="cal-cell${isToday?' cal-today':''}" data-date="${ds}">
+        <span class="cal-day-num">${d}</span>
+        ${cnt>0?`<span class="cal-dot-count">${cnt}</span>`:''}
+      </div>`;
+    }
+    return`<div class="cal-month-block">
+      <div class="cal-month-title">${y}년 ${MONTHS[m]}</div>
+      <div class="cal-month-grid">
+        <div class="cal-dow-row"><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span><span>일</span></div>
+        <div class="cal-cells">${cells}</div>
+      </div>
+    </div>`;
   }).join("");
-  $("commentsList").scrollTop=$("commentsList").scrollHeight;
-  $("commentsList").querySelectorAll(".ci-del").forEach(btn=>btn.addEventListener("click",()=>delComment(btn.dataset.cid)));
+
+  container.querySelectorAll(".cal-cell[data-date]").forEach(cell=>{
+    cell.addEventListener("click",()=>openDayPage(cell.dataset.date));
+  });
+  // 오늘로 스크롤
+  const todayCell=container.querySelector(".cal-today");
+  if(todayCell)setTimeout(()=>todayCell.scrollIntoView({behavior:"smooth",block:"center"}),100);
 }
-$("commentSend").addEventListener("click",postComment);
-$("commentInput").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();postComment();}});
-async function postComment(){
-  if(!CU||!viewItem)return;const text=$("commentInput").value.trim();if(!text)return;
-  const newC=[...(viewItem.comments||[]),{id:uid(),userId:CU.id,text,date:todayStr()}];
-  await updateDoc(doc(db,"fileItems",viewItem.id),{comments:newC});
-  viewItem.comments=newC;$("commentInput").value="";renderComments();renderCal();
+
+// ════ DAY DETAIL PAGE ════
+async function openDayPage(dateStr){
+  currentDayDate=dateStr;
+  currentDayMember=CU.id;
+  $("dayDetailTitle").textContent=dateStr.replace(/-/g,'년 ').replace(/-/,'월 ')+'일';
+  await loadDayData();
+  switchTab("day");
 }
-async function delComment(cid){
-  if(!viewItem)return;const newC=(viewItem.comments||[]).filter(c=>c.id!==cid);
-  await updateDoc(doc(db,"fileItems",viewItem.id),{comments:newC});
-  viewItem.comments=newC;renderComments();renderCal();
+
+async function loadDayData(){
+  if(!currentDayDate)return;
+  const items=await getFileItems();
+  // folders: fileItems where isFolder=true, date=currentDayDate
+  dayFolders=items.filter(it=>it.isFolder&&it.date===currentDayDate&&it.authorId===currentDayMember).sort((a,b)=>(a.order||0)-(b.order||0));
+  dayFiles=items.filter(it=>!it.isFolder&&it.date===currentDayDate&&it.authorId===currentDayMember).sort((a,b)=>(a.order||0)-(b.order||0));
+  renderDayMemberTabs();
+  renderDayFileList();
+  renderFolderSelect();
 }
+
+function renderDayDetail(dateStr){
+  if(!$("tab-day").classList.contains("active"))return;
+  loadDayData();
+}
+
+function renderDayMemberTabs(){
+  $("dayMemberTabs").innerHTML=USERS.map(u=>`
+    <button class="day-member-tab${u.id===currentDayMember?' active':''}" data-uid="${u.id}" style="${u.id===currentDayMember?`border-color:${u.color};color:${u.color}`:''}">
+      <span class="dmt-av" style="background:${u.bg};color:${u.color}">${u.avatar||u.initial}</span>
+      ${u.name}
+    </button>`).join("");
+  $("dayMemberTabs").querySelectorAll(".day-member-tab").forEach(btn=>{
+    btn.addEventListener("click",()=>{currentDayMember=btn.dataset.uid;loadDayData();});
+  });
+}
+
+function renderDayFileList(){
+  const list=$("dayFileList");
+  if(!dayFolders.length&&!dayFiles.length){list.innerHTML=`<div class="day-empty">자료가 없습니다</div>`;return;}
+  let html="";
+  // 폴더 없는 파일 먼저
+  const rootFiles=dayFiles.filter(f=>!f.folderId);
+  rootFiles.forEach(f=>{html+=fileRowHtml(f,false);});
+  // 폴더들
+  dayFolders.forEach(folder=>{
+    const folderFiles=dayFiles.filter(f=>f.folderId===folder.id);
+    html+=`<div class="day-folder" data-id="${folder.id}" draggable="true">
+      <div class="day-folder-row">
+        <i class="ti ti-folder day-folder-icon"></i>
+        <span class="day-folder-name">${esc(folder.title)}</span>
+        <span class="day-folder-count">${folderFiles.length}개</span>
+        <button class="day-folder-toggle" data-id="${folder.id}"><i class="ti ti-chevron-down"></i></button>
+      </div>
+      <div class="day-folder-children" id="fc-${folder.id}" style="display:none">
+        ${folderFiles.length?folderFiles.map(f=>fileRowHtml(f,true)).join(""):'<div class="day-empty-folder">비어있음</div>'}
+      </div>
+    </div>`;
+  });
+  list.innerHTML=html;
+
+  // 폴더 토글
+  list.querySelectorAll(".day-folder-toggle").forEach(btn=>{
+    btn.addEventListener("click",()=>{
+      const ch=$(`fc-${btn.dataset.id}`);
+      const open=ch.style.display!=="none";
+      ch.style.display=open?"none":"block";
+      btn.querySelector("i").className=`ti ${open?"ti-chevron-down":"ti-chevron-up"}`;
+    });
+  });
+  // 파일 클릭
+  list.querySelectorAll(".day-file-row[data-url]").forEach(row=>{
+    row.addEventListener("click",e=>{if(!e.target.closest(".day-file-del"))window.open(row.dataset.url,"_blank");});
+  });
+  // 삭제
+  list.querySelectorAll(".day-file-del").forEach(btn=>{
+    btn.addEventListener("click",async()=>{
+      if(!confirm("삭제할까요?"))return;
+      await deleteDoc(doc(db,"fileItems",btn.dataset.id));
+      showToast("삭제됐습니다");loadDayData();
+    });
+  });
+  // 드래그앤드롭
+  setupDragDrop(list);
+}
+
+function fileRowHtml(f,inFolder){
+  const icon=TYPE_ICONS[f.type]||"ti-link";
+  const canDel=CU&&f.authorId===CU.id;
+  return`<div class="day-file-row${inFolder?' indent':''}" data-id="${f.id}" data-url="${esc(f.url)}" draggable="true">
+    <i class="ti ${icon} day-file-icon"></i>
+    <span class="day-file-name">${esc(f.title)}</span>
+    ${f.note?`<span class="day-file-note">${esc(f.note)}</span>`:''}
+    ${canDel?`<button class="day-file-del" data-id="${f.id}"><i class="ti ti-trash"></i></button>`:''}
+  </div>`;
+}
+
+function setupDragDrop(list){
+  const rows=[...list.querySelectorAll("[draggable='true']")];
+  rows.forEach(row=>{
+    row.addEventListener("dragstart",e=>{dragSrcId=row.dataset.id;row.classList.add("dragging");e.dataTransfer.effectAllowed="move";});
+    row.addEventListener("dragend",()=>{row.classList.remove("dragging");list.querySelectorAll(".drag-over").forEach(el=>el.classList.remove("drag-over"));});
+    row.addEventListener("dragover",e=>{e.preventDefault();row.classList.add("drag-over");});
+    row.addEventListener("dragleave",()=>row.classList.remove("drag-over"));
+    row.addEventListener("drop",async e=>{
+      e.preventDefault();row.classList.remove("drag-over");
+      if(!dragSrcId||dragSrcId===row.dataset.id)return;
+      // 순서 재정렬: allItems에서 src를 target 위치로 이동
+      const allItems=[...dayFolders,...dayFiles];
+      const srcIdx=allItems.findIndex(x=>x.id===dragSrcId);
+      const tgtIdx=allItems.findIndex(x=>x.id===row.dataset.id);
+      if(srcIdx<0||tgtIdx<0)return;
+      const moved=allItems.splice(srcIdx,1)[0];
+      allItems.splice(tgtIdx,0,moved);
+      // 순서 일괄 업데이트
+      await Promise.all(allItems.map((it,i)=>updateDoc(doc(db,"fileItems",it.id),{order:i})));
+      loadDayData();
+    });
+  });
+}
+
+function renderFolderSelect(){
+  const sel=$("dfFolder");
+  sel.innerHTML=`<option value="">선택 안함</option>`+dayFolders.map(f=>`<option value="${f.id}">${esc(f.title)}</option>`).join("");
+}
+
+// 뒤로가기
+$("dayBackBtn").addEventListener("click",()=>{
+  currentDayDate=null;
+  switchTab("files");
+  document.querySelector(".nav-btn[data-tab='files']")?.classList.add("active");
+  renderCalMonths();
+});
+
+// 폴더 만들기
+$("folderNewBtn").addEventListener("click",()=>{
+  $("folderCreateForm").style.display=$("folderCreateForm").style.display==="none"?"block":"none";
+  $("folderNameInput").value="";
+});
+$("folderCreateCancel").addEventListener("click",()=>{$("folderCreateForm").style.display="none";});
+$("folderCreateSave").addEventListener("click",async()=>{
+  const name=$("folderNameInput").value.trim();if(!name)return;
+  await addDoc(collection(db,"fileItems"),{isFolder:true,title:name,date:currentDayDate,authorId:CU.id,order:dayFolders.length+dayFiles.length,createdAt:serverTimestamp()});
+  $("folderCreateForm").style.display="none";showToast("폴더가 만들어졌습니다");loadDayData();
+});
+
+// 자료 추가
+$("dfSave").addEventListener("click",async()=>{
+  const url=$("dfUrl").value.trim(),title=$("dfTitle").value.trim();
+  if(!url||!title){showToast("URL과 제목을 입력해주세요");return;}
+  $("dfSave").disabled=true;
+  await addDoc(collection(db,"fileItems"),{
+    isFolder:false,type:$("dfType").value,title,url,
+    note:$("dfNote").value.trim(),
+    folderId:$("dfFolder").value||null,
+    authorId:CU.id,date:currentDayDate,
+    order:dayFolders.length+dayFiles.length,
+    comments:[],createdAt:serverTimestamp()
+  });
+  $("dfUrl").value="";$("dfTitle").value="";$("dfNote").value="";$("dfFolder").value="";
+  $("dfSave").disabled=false;
+  showToast("자료가 추가됐습니다 🔗");loadDayData();currentDayMember=CU.id;
+});
+
 
 // ════ PROFILE ════
 const ANIMAL_EMOJIS=['🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼','🐨','🐯','🦁','🐮','🐷','🐸','🐵','🐔','🐧','🐦','🦆','🦉','🦋','🐢','🦖','🐬','🦈','🐙'];

@@ -156,80 +156,115 @@
     <div class="profile-body">
       <div class="profile-identity">
         <div class="profile-avatar" id="profileAvatar">
-        <span id="profileAvatarEmoji">🔬</span>
-        <img id="profileAvatarImg" style="display:none">
-        <div class="profile-avatar-overlay" id="avatarEditOverlay"><i class="ti ti-camera"></i></div>
-        <input type="file" id="avatarFileInput" accept="image/*" style="display:none">
-      </div>
-        <div>
-          <div class="profile-name" id="profileName"></div>
+          <span id="profileAvatarEmoji">🔬</span>
+          <img id="profileAvatarImg" style="display:none">
+          <div class="profile-avatar-overlay" id="avatarEditOverlay"><i class="ti ti-camera"></i></div>
+          <input type="file" id="avatarFileInput" accept="image/*" style="display:none">
+        </div>
+        <div style="flex:1">
+          <div style="display:flex;align-items:center;gap:8px">
+            <div class="profile-name" id="profileName"></div>
+            <button class="profile-name-edit-btn" id="profileNameEditBtn" title="이름 편집"><i class="ti ti-pencil"></i></button>
+          </div>
           <div class="profile-role" id="profileRole"></div>
         </div>
       </div>
       <div class="profile-bio-wrap">
-      <div class="profile-bio" id="profileBio"></div>
-      <button class="bio-edit-btn" id="bioEditBtn" title="소개 편집"><i class="ti ti-pencil"></i></button>
-    </div>
-    <div class="bio-edit-form" id="bioEditForm" style="display:none">
-      <input type="text" id="bioInput" class="bio-input" placeholder="한 줄 소개를 입력하세요...">
-      <div class="bio-edit-btns">
-        <button class="bio-cancel" id="bioCancelBtn">취소</button>
-        <button class="bio-save" id="bioSaveBtn">저장</button>
+        <div class="profile-bio" id="profileBio"></div>
+        <button class="bio-edit-btn" id="bioEditBtn" title="소개 편집"><i class="ti ti-pencil"></i></button>
       </div>
-    </div>
       <div class="profile-stats" id="profileStats"></div>
       <div class="profile-recent" id="profileRecent"></div>
+    </div>
+  </div>
+</div>
 
-      <!-- 아바타 선택 패널 -->
-      <div class="avatar-pick-panel" id="avatarPickPanel" style="display:none">
-        <div class="app-title">프로필 사진 변경</div>
-        <div class="app-section-label">동물</div>
-        <div class="emoji-grid" id="animalEmojiGrid"></div>
-        <div class="app-section-label" style="margin-top:12px">기타</div>
-        <div class="emoji-grid" id="otherEmojiGrid"></div>
-        <div class="app-section-label" style="margin-top:12px">사진 업로드</div>
-        <button class="pef-upload-btn" id="avatarUploadBtn"><i class="ti ti-upload"></i> 사진 업로드 (JPG, PNG)</button>
-        <div class="pef-preview-wrap" id="pefAvatarPreview" style="display:none">
-          <img class="pef-preview-img" id="pefAvatarPreviewImg">
-          <span style="font-size:13px;color:rgba(255,255,255,.5)">새 프로필 사진</span>
-          <button class="pef-preview-clear" id="clearAvatarBtn"><i class="ti ti-x"></i></button>
-        </div>
-        <div class="app-btns">
-          <button class="app-cancel" id="avatarPickCancel">취소</button>
-          <button class="app-save" id="avatarPickSave">저장</button>
-        </div>
+<!-- 아바타 모달 -->
+<div class="overlay" id="avatarPickPanel" style="display:none" onclick="if(event.target===this)this.style.display='none'">
+  <div class="modal-box" onclick="event.stopPropagation()" style="max-width:460px">
+    <div class="modal-head">
+      <h3>프로필 사진 변경</h3>
+      <button class="modal-x" onclick="document.getElementById('avatarPickPanel').style.display='none'"><i class="ti ti-x"></i></button>
+    </div>
+    <div style="padding:0 18px 8px">
+      <div class="pef-label" style="margin-bottom:8px">동물</div>
+      <div class="emoji-grid" id="animalEmojiGrid"></div>
+      <div class="pef-label" style="margin-top:14px;margin-bottom:8px">기타</div>
+      <div class="emoji-grid" id="otherEmojiGrid"></div>
+      <div class="pef-label" style="margin-top:14px;margin-bottom:8px">사진 업로드</div>
+      <button class="pef-upload-btn" id="avatarUploadBtn"><i class="ti ti-upload"></i> 사진 업로드 (JPG, PNG)</button>
+      <div class="pef-preview-wrap" id="pefAvatarPreview" style="display:none">
+        <img class="pef-preview-img" id="pefAvatarPreviewImg">
+        <span style="font-size:13px;color:rgba(255,255,255,.5)">새 프로필 사진</span>
+        <button class="pef-preview-clear" id="clearAvatarBtn"><i class="ti ti-x"></i></button>
       </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-cancel" id="avatarPickCancel">취소</button>
+      <button class="btn-primary" id="avatarPickSave">저장</button>
+    </div>
+  </div>
+</div>
 
-      <!-- 배너 선택 패널 -->
-      <div class="avatar-pick-panel" id="bannerPickPanel" style="display:none">
-        <div class="app-title">배경 변경</div>
-        <div class="app-section-label">프리셋</div>
-        <div class="banner-presets" id="bannerPresets"></div>
-        <div class="app-section-label" style="margin-top:12px">사진 업로드</div>
-        <button class="pef-upload-btn" id="bannerUploadBtn"><i class="ti ti-photo"></i> 배경 사진 업로드</button>
-        <div class="pef-preview-wrap" id="pefBannerPreview" style="display:none">
-          <img class="pef-preview-img" id="pefBannerPreviewImg" style="border-radius:8px;width:80px;height:40px;object-fit:cover;">
-          <span style="font-size:13px;color:rgba(255,255,255,.5)">새 배경 사진</span>
-          <button class="pef-preview-clear" id="clearBannerBtn"><i class="ti ti-x"></i></button>
-        </div>
-        <div class="app-btns">
-          <button class="app-cancel" id="bannerPickCancel">취소</button>
-          <button class="app-save" id="bannerPickSave">저장</button>
-        </div>
+<!-- 배너 모달 -->
+<div class="overlay" id="bannerPickPanel" style="display:none" onclick="if(event.target===this)this.style.display='none'">
+  <div class="modal-box" onclick="event.stopPropagation()" style="max-width:400px">
+    <div class="modal-head">
+      <h3>배경 변경</h3>
+      <button class="modal-x" onclick="document.getElementById('bannerPickPanel').style.display='none'"><i class="ti ti-x"></i></button>
+    </div>
+    <div style="padding:0 18px 8px">
+      <div class="pef-label" style="margin-bottom:8px">프리셋</div>
+      <div class="banner-presets" id="bannerPresets"></div>
+      <div class="pef-label" style="margin-top:14px;margin-bottom:8px">사진 업로드</div>
+      <button class="pef-upload-btn" id="bannerUploadBtn"><i class="ti ti-photo"></i> 배경 사진 업로드</button>
+      <div class="pef-preview-wrap" id="pefBannerPreview" style="display:none">
+        <img class="pef-preview-img" id="pefBannerPreviewImg" style="border-radius:8px;width:80px;height:40px;object-fit:cover;">
+        <span style="font-size:13px;color:rgba(255,255,255,.5)">새 배경 사진</span>
+        <button class="pef-preview-clear" id="clearBannerBtn"><i class="ti ti-x"></i></button>
       </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-cancel" id="bannerPickCancel">취소</button>
+      <button class="btn-primary" id="bannerPickSave">저장</button>
+    </div>
+  </div>
+</div>
 
-      <!-- 편집 폼 -->
-      <div class="profile-edit-form" id="profileEditForm" style="display:none">
-        <div class="pef-section-title">프로필 편집</div>
-        <div class="pef-row"><div class="pef-label">이름</div><input type="text" class="pef-input" id="pefName"></div>
-        <div class="pef-row"><div class="pef-label">소개</div><input type="text" class="pef-input" id="pefBio" placeholder="한 줄 소개"></div>
-        <div class="pef-row"><div class="pef-label">비밀번호</div><input type="password" class="pef-input" id="pefPw" placeholder="변경할 비밀번호 (비워두면 유지)"></div>
-        <div class="pef-btns">
-          <button class="pef-cancel" id="pefCancel">취소</button>
-          <button class="pef-save" id="pefSave">저장</button>
-        </div>
-        <div class="pef-msg" id="pefMsg"></div>
+<!-- 이름/비번 편집 모달 -->
+<div class="overlay" id="profileEditForm" style="display:none" onclick="if(event.target===this)this.style.display='none'">
+  <div class="modal-box" onclick="event.stopPropagation()" style="max-width:380px">
+    <div class="modal-head">
+      <h3>프로필 편집</h3>
+      <button class="modal-x" id="pefCancel"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="ff"><label>이름</label><input type="text" class="pef-input" id="pefName" style="width:100%;padding:9px 11px;border:1px solid rgba(255,255,255,0.1);border-radius:8px;font-size:13px;font-family:var(--font);background:rgba(255,255,255,0.05);color:#fff;"></div>
+    <div class="ff"><label>소개</label><input type="text" class="pef-input" id="pefBio" placeholder="한 줄 소개" style="width:100%;padding:9px 11px;border:1px solid rgba(255,255,255,0.1);border-radius:8px;font-size:13px;font-family:var(--font);background:rgba(255,255,255,0.05);color:#fff;"></div>
+    <div class="ff"><label>비밀번호</label><input type="password" class="pef-input" id="pefPw" placeholder="변경할 비밀번호 (비워두면 유지)" style="width:100%;padding:9px 11px;border:1px solid rgba(255,255,255,0.1);border-radius:8px;font-size:13px;font-family:var(--font);background:rgba(255,255,255,0.05);color:#fff;"></div>
+    <div class="modal-foot" style="flex-direction:column;gap:6px">
+      <div style="display:flex;gap:8px;width:100%">
+        <button class="btn-cancel" style="flex:1" onclick="document.getElementById('profileEditForm').style.display='none'">취소</button>
+        <button class="btn-primary" style="flex:2" id="pefSave">저장</button>
       </div>
+      <div class="pef-msg" id="pefMsg"></div>
+    </div>
+  </div>
+</div>
+
+<!-- 소개 편집 모달 -->
+<div class="overlay" id="bioEditForm" style="display:none" onclick="if(event.target===this)this.style.display='none'">
+  <div class="modal-box" onclick="event.stopPropagation()" style="max-width:380px">
+    <div class="modal-head">
+      <h3>소개 편집</h3>
+      <button class="modal-x" id="bioCancelBtn"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="ff">
+      <label>한 줄 소개</label>
+      <input type="text" id="bioInput" class="bio-input" placeholder="한 줄 소개를 입력하세요..." style="width:100%;padding:9px 11px;border:1px solid rgba(255,255,255,0.1);border-radius:8px;font-size:13px;font-family:var(--font);background:rgba(255,255,255,0.05);color:#fff;">
+    </div>
+    <div class="modal-foot">
+      <button class="btn-cancel" onclick="document.getElementById('bioEditForm').style.display='none'">취소</button>
+      <button class="btn-primary" id="bioSaveBtn">저장</button>
     </div>
   </div>
 </div>

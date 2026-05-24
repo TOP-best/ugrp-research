@@ -83,11 +83,11 @@ html,body { height:100%; font-family:var(--font); background:var(--bg); color:va
 .login-center {
   position:relative; z-index:1;
   height:100vh;
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:space-evenly;
+  padding:60px 20px;
 }
-.login-quote {
-  position:absolute; top:60px; left:0; right:0;
-  text-align:center; padding:0 40px;
-}
+.login-quote { text-align:center; width:100%; padding:0 40px; }
 .login-quote blockquote {
   font-family:'Inter',sans-serif;
   font-size:clamp(24px,4.2vw,62px);
@@ -99,8 +99,6 @@ html,body { height:100%; font-family:var(--font); background:var(--bg); color:va
 
 /* LOGIN HERO */
 .login-hero {
-  position:absolute; top:50%; left:50%;
-  transform:translate(-50%, -50%);
   display:flex; flex-direction:column; align-items:center; gap:18px;
 }
 .hero-logo { width:120px; height:120px; display:flex; align-items:center; justify-content:center; }
@@ -428,14 +426,14 @@ html,body { height:100%; font-family:var(--font); background:var(--bg); color:va
 .profile-body { max-width:640px; margin:0 auto; padding:0 24px 40px; }
 .profile-identity {
   display:flex; align-items:flex-end; gap:18px;
-  margin-top:-44px; margin-bottom:16px; position:relative; z-index:2;
+  margin-top:-56px; margin-bottom:16px; position:relative; z-index:2;
 }
 .profile-avatar {
-  width:96px; height:96px; border-radius:50%;
+  width:120px; height:120px; border-radius:50%;
   background:rgba(255,255,255,0.08);
   border:4px solid #0a0a0c;
   display:flex; align-items:center; justify-content:center;
-  font-size:40px; flex-shrink:0;
+  font-size:52px; flex-shrink:0;
   box-shadow:0 4px 24px rgba(0,0,0,0.6);
   overflow:hidden; cursor:pointer; position:relative;
 }
@@ -449,6 +447,8 @@ html,body { height:100%; font-family:var(--font); background:var(--bg); color:va
 }
 .profile-avatar:hover .profile-avatar-overlay { opacity:1; }
 .profile-name { font-size:24px; font-weight:800; color:#fff; letter-spacing:-.8px; line-height:1; margin-bottom:4px; }
+.profile-name-edit-btn { background:none; border:none; color:rgba(255,255,255,.3); cursor:pointer; font-size:14px; padding:2px 4px; transition:color .15s; }
+.profile-name-edit-btn:hover { color:#fff; }
 .profile-role { font-size:12px; color:rgba(255,255,255,.4); letter-spacing:.3px; }
 .profile-stats {
   display:grid; grid-template-columns:repeat(3,1fr);

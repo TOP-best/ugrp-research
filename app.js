@@ -346,10 +346,6 @@ function openProfile(){
   $("profileRole").textContent=CU.role||"Researcher";
   if(CU.bio){$("profileBio").textContent=CU.bio;$("profileBio").classList.remove("empty");}
   else{$("profileBio").textContent="소개를 작성해보세요";$("profileBio").classList.add("empty");}
-  $("pefName").value=CU.name||"";
-  $("pefBio").value=CU.bio||"";
-  $("pefPw").value="";
-  $("pefMsg").textContent="";
   renderProfileStats();
   switchTab("profile");
 }
@@ -458,9 +454,9 @@ $("avatarPickSave").addEventListener("click",async()=>{
 
 // 소개 편집
 $("bioEditBtn").addEventListener("click",()=>{
-  $("bioEditForm").style.display="block";
+  $("bioEditForm").style.display="flex";
   $("bioInput").value=CU.bio||"";
-  $("bioInput").focus();
+  setTimeout(()=>$("bioInput").focus(),50);
 });
 $("bioCancelBtn").addEventListener("click",()=>{$("bioEditForm").style.display="none";});
 $("bioSaveBtn").addEventListener("click",async()=>{
@@ -473,8 +469,16 @@ $("bioSaveBtn").addEventListener("click",async()=>{
 });
 
 // 이름/비번 편집
-$("profileEditForm") && [$("pefCancel"),$("pefSave")].forEach(el=>el&&el.addEventListener("click", async(e)=>{
-  if(e.target.id==="pefCancel"){$("profileEditForm").style.display="none";return;}
+$("profileNameEditBtn").addEventListener("click",()=>{
+  $("pefName").value=CU.name||"";
+  $("pefBio").value=CU.bio||"";
+  $("pefPw").value="";
+  $("pefMsg").textContent="";
+  $("profileEditForm").style.display="flex";
+  setTimeout(()=>$("pefName").focus(),50);
+});
+$("pefCancel").addEventListener("click",()=>{$("profileEditForm").style.display="none";});
+$("pefSave").addEventListener("click",async()=>{
   const name=$("pefName").value.trim(), pw=$("pefPw").value.trim(), bio=$("pefBio").value.trim();
   if(!name){$("pefMsg").style.color="#f87171";$("pefMsg").textContent="이름을 입력해주세요";return;}
   const update={name,bio}; if(pw)update.pw=pw;
@@ -488,7 +492,7 @@ $("profileEditForm") && [$("pefCancel"),$("pefSave")].forEach(el=>el&&el.addEven
   const nameEl=$(`mpName${idx}`); if(nameEl)nameEl.textContent=name;
   $("pefMsg").style.color="#10b981";$("pefMsg").textContent="저장됐습니다 ✓";
   setTimeout(()=>$("profileEditForm").style.display="none",1000);
-}));
+});
 
 // ════ INIT ════// ════ INIT ════
 

@@ -344,6 +344,7 @@ function renderDayFileList(){
         <i class="ti ti-folder day-folder-icon"></i>
         <span class="day-folder-name">${esc(item.title)}</span>
         <span class="day-folder-count">${folderFiles.length}개</span>
+        <button class="day-folder-del" data-id="${item.id}" title="폴더 삭제"><i class="ti ti-trash"></i></button>
         <button class="day-folder-toggle" data-id="${item.id}"><i class="ti ti-chevron-down"></i></button>`;
       folderEl.appendChild(rowEl);
 
@@ -376,6 +377,21 @@ function renderDayFileList(){
       ch.style.display=open?"none":"flex";
       if(!open){ch.style.flexDirection="column";ch.style.gap="4px";}
       btn.querySelector("i").className=`ti ${open?"ti-chevron-down":"ti-chevron-up"}`;
+    });
+  });
+
+  // 폴더 삭제
+  list.querySelectorAll(".day-folder-del").forEach(btn=>{
+    btn.addEventListener("click",async e=>{
+      e.stopPropagation();
+      const folderId=btn.dataset.id;
+      const folderFiles=dayFiles.filter(f=>f.folderId===folderId);
+      if(!confirm(folderFiles.length>0?`폴더 안의 파일 ${folderFiles.length}개가 폴더 밖으로 이동됩니다. 삭제할까요?`:"빈 폴더를 삭제할까요?"))return;
+      // 폴더 안 파일들 루트로 이동
+      await Promise.all(folderFiles.map(f=>updateDoc(doc(db,"fileItems",f.id),{folderId:null,order:9999})));
+      // 폴더 삭제
+      await deleteDoc(doc(db,"fileItems",folderId));
+      showToast("폴더가 삭제됐습니다");loadDayData();
     });
   });
 
@@ -418,34 +434,28 @@ function makeFileEl(f, folderId){
 
 function setupDragDrop(list){
   let dragId=null, dragType=null, dragFromFolder=null;
+  let isDragging=false;
 
   // 루트 드롭존 (폴더 밖으로 빼기)
   let rootZone=document.getElementById("rootDropZone");
-  if(!rootZone){
-    rootZone=document.createElement("div");
-    rootZone.id="rootDropZone";
-    rootZone.className="root-drop-zone";
-    rootZone.innerHTML='<i class="ti ti-arrow-bar-up"></i> 여기에 드롭하면 폴더 밖으로 이동';
-    list.parentElement.insertBefore(rootZone,list);
-  }
+  if(rootZone) rootZone.remove();
+  rootZone=document.createElement("div");
+  rootZone.id="rootDropZone";
+  rootZone.className="root-drop-zone";
+  rootZone.textContent="여기에 드롭하면 폴더 밖으로 이동";
+  list.parentElement.insertBefore(rootZone,list);
   rootZone.style.display="none";
-  // 이전 이벤트 중복 방지
-  const newRootZone=rootZone.cloneNode(true);
-  rootZone.parentNode.replaceChild(newRootZone,rootZone);
-  rootZone=newRootZone;
 
   rootZone.addEventListener("dragover",e=>{
     if(dragType!=="file"||!dragFromFolder)return;
     e.preventDefault();
     rootZone.classList.add("drag-over-root");
   });
-  rootZone.addEventListener("dragleave",e=>{
-    if(!rootZone.contains(e.relatedTarget))rootZone.classList.remove("drag-over-root");
-  });
+  rootZone.addEventListener("dragleave",()=>rootZone.classList.remove("drag-over-root"));
   rootZone.addEventListener("drop",async e=>{
     e.preventDefault();
     rootZone.classList.remove("drag-over-root");
-    if(!dragId||dragType!=="file"||!dragFromFolder)return;
+    if(!dragId||!dragFromFolder)return;
     await updateDoc(doc(db,"fileItems",dragId),{folderId:null,order:9999});
     showToast("폴더 밖으로 이동됐습니다");loadDayData();
   });
@@ -454,66 +464,85 @@ function setupDragDrop(list){
     list.querySelectorAll(".drag-over-item,.drag-over-folder").forEach(x=>x.classList.remove("drag-over-item","drag-over-folder"));
   }
 
-  function attachDrag(el){
+  // draggable 요소들에 이벤트 부착
+  list.querySelectorAll("[draggable='true']").forEach(el=>{
     el.addEventListener("dragstart",e=>{
+      isDragging=true;
       dragId=el.dataset.id;
       dragType=el.dataset.type;
       dragFromFolder=el.dataset.folderId||null;
       e.dataTransfer.effectAllowed="move";
+      e.dataTransfer.setData("text/plain",dragId);
       setTimeout(()=>el.classList.add("dragging"),0);
       if(dragType==="file"&&dragFromFolder) rootZone.style.display="flex";
     });
+
     el.addEventListener("dragend",()=>{
+      isDragging=false;
       el.classList.remove("dragging");
       clearHL();
       rootZone.style.display="none";
       rootZone.classList.remove("drag-over-root");
+      dragId=null;dragType=null;dragFromFolder=null;
     });
+
     el.addEventListener("dragover",e=>{
+      if(!isDragging)return;
       e.preventDefault();e.stopPropagation();
       if(el.dataset.id===dragId)return;
       clearHL();
-      if(el.dataset.type==="folder"&&dragType==="file") el.classList.add("drag-over-folder");
-      else el.classList.add("drag-over-item");
+      if(el.dataset.type==="folder"&&dragType==="file"){
+        el.classList.add("drag-over-folder");
+      } else if(el.dataset.type!=="folder"||dragType==="folder"){
+        el.classList.add("drag-over-item");
+      }
     });
+
     el.addEventListener("dragleave",e=>{
-      if(!el.contains(e.relatedTarget)) el.classList.remove("drag-over-item","drag-over-folder");
+      if(!el.contains(e.relatedTarget)){
+        el.classList.remove("drag-over-item","drag-over-folder");
+      }
     });
+
     el.addEventListener("drop",async e=>{
       e.preventDefault();e.stopPropagation();
       clearHL();
       if(!dragId||el.dataset.id===dragId)return;
 
-      const tgtId=el.dataset.id, tgtType=el.dataset.type, tgtFolder=el.dataset.folderId||null;
+      const tgtId=el.dataset.id;
+      const tgtType=el.dataset.type;
+      const tgtFolder=el.dataset.folderId||null;
       const srcFolder=dragFromFolder;
 
-      // 파일 → 폴더로
+      // 파일 → 폴더로 드롭
       if(tgtType==="folder"&&dragType==="file"){
         if(srcFolder===tgtId)return;
         await updateDoc(doc(db,"fileItems",dragId),{folderId:tgtId,order:9999});
         showToast("폴더로 이동됐습니다");loadDayData();return;
       }
 
+      // 같은 레벨 순서 변경
       if(srcFolder===tgtFolder){
-        // 같은 레벨 순서 변경
         let pool;
-        if(!srcFolder){
-          if(dragType==="folder"){
-            pool=[...dayFolders].sort((a,b)=>(a.order||0)-(b.order||0));
-          } else {
-            const rootFiles=dayFiles.filter(f=>!f.folderId);
-            pool=[...rootFiles,...dayFolders].sort((a,b)=>(a.order||0)-(b.order||0));
-          }
+        if(srcFolder){
+          // 폴더 안: 파일끼리
+          pool=[...dayFiles.filter(f=>f.folderId===srcFolder)].sort((a,b)=>(a.order||0)-(b.order||0));
+        } else if(dragType==="folder"&&tgtType==="folder"){
+          // 루트: 폴더끼리
+          pool=[...dayFolders].sort((a,b)=>(a.order||0)-(b.order||0));
         } else {
-          pool=dayFiles.filter(f=>f.folderId===srcFolder).sort((a,b)=>(a.order||0)-(b.order||0));
+          // 루트: 파일+폴더 섞인 경우
+          const rootFiles=dayFiles.filter(f=>!f.folderId);
+          pool=[...rootFiles,...dayFolders].sort((a,b)=>(a.order||0)-(b.order||0));
         }
         const srcIdx=pool.findIndex(x=>x.id===dragId);
         const tgtIdx=pool.findIndex(x=>x.id===tgtId);
-        if(srcIdx<0||tgtIdx<0)return;
+        if(srcIdx<0||tgtIdx<0){loadDayData();return;}
         const moved=pool.splice(srcIdx,1)[0];
         pool.splice(tgtIdx,0,moved);
         await Promise.all(pool.map((it,i)=>updateDoc(doc(db,"fileItems",it.id),{order:i})));
       } else {
+        // 레벨 이동
         if(srcFolder&&!tgtFolder){
           await updateDoc(doc(db,"fileItems",dragId),{folderId:null,order:9999});
           showToast("루트로 이동됐습니다");
@@ -524,15 +553,15 @@ function setupDragDrop(list){
       }
       loadDayData();
     });
-  }
+  });
 
-  // 폴더 row 드롭존 (폴더 닫혀있어도 파일 드롭 가능)
+  // 폴더 row: 파일을 닫힌 폴더에 드롭
   list.querySelectorAll(".day-folder-row").forEach(row=>{
     const folderEl=row.closest(".day-folder");
     if(!folderEl)return;
     const folderId=folderEl.dataset.id;
     row.addEventListener("dragover",e=>{
-      if(dragType!=="file")return;
+      if(!isDragging||dragType!=="file")return;
       e.preventDefault();e.stopPropagation();
       clearHL();
       folderEl.classList.add("drag-over-folder");
@@ -543,8 +572,7 @@ function setupDragDrop(list){
     row.addEventListener("drop",async e=>{
       e.preventDefault();e.stopPropagation();
       folderEl.classList.remove("drag-over-folder");
-      if(!dragId||dragType!=="file")return;
-      if(dragFromFolder===folderId)return;
+      if(!dragId||dragType!=="file"||dragFromFolder===folderId)return;
       await updateDoc(doc(db,"fileItems",dragId),{folderId,order:9999});
       showToast("폴더로 이동됐습니다");loadDayData();
     });
@@ -552,7 +580,7 @@ function setupDragDrop(list){
 
   // 폴더 children 드롭존
   list.querySelectorAll(".day-folder-children").forEach(ch=>{
-    ch.addEventListener("dragover",e=>{e.preventDefault();e.stopPropagation();});
+    ch.addEventListener("dragover",e=>{if(!isDragging)return;e.preventDefault();e.stopPropagation();});
     ch.addEventListener("drop",async e=>{
       e.preventDefault();e.stopPropagation();
       if(!dragId||dragType!=="file")return;
@@ -562,8 +590,6 @@ function setupDragDrop(list){
       showToast("폴더로 이동됐습니다");loadDayData();
     });
   });
-
-  list.querySelectorAll("[draggable='true']").forEach(attachDrag);
 }
 
 function renderFolderSelect(){

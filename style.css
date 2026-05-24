@@ -417,6 +417,8 @@ html,body { height:100%; font-family:var(--font); background:var(--bg); color:va
 .day-folder-name { flex:1; font-size:13px; font-weight:600; color:#fff; }
 .day-folder-count { font-size:11px; color:rgba(255,255,255,.3); }
 .day-folder-toggle { background:none; border:none; color:rgba(255,255,255,.4); cursor:pointer; font-size:14px; padding:2px; }
+.day-folder-del { background:none; border:none; color:rgba(255,255,255,.2); cursor:pointer; font-size:13px; padding:3px; transition:color .15s; }
+.day-folder-del:hover { color:#f87171; }
 .day-folder-children { padding:4px 6px 6px; background:rgba(0,0,0,0.2); border-radius:0 0 8px 8px; display:flex; flex-direction:column; gap:4px; }
 .day-empty-folder { font-size:12px; color:rgba(255,255,255,.2); padding:8px 6px; }
 .day-file-row { display:flex; align-items:center; gap:10px; padding:10px 14px; border-radius:8px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.05); cursor:grab; transition:all .15s; }

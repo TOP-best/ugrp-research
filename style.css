@@ -1,4 +1,43 @@
 
+/* LOGIN HERO */
+.login-hero {
+  display:flex; flex-direction:column; align-items:center; gap:28px;
+}
+.hero-logo img {
+  width:110px; height:110px; object-fit:contain;
+  filter:drop-shadow(0 0 30px rgba(255,255,255,0.1));
+}
+.hero-text { text-align:center; }
+.hero-text h1 {
+  font-family:'Inter',sans-serif;
+  font-size:42px; font-weight:900; color:#fff;
+  letter-spacing:-2px; line-height:1;
+}
+.hero-text p {
+  font-size:14px; color:rgba(255,255,255,0.35);
+  margin-top:6px; letter-spacing:2px; text-transform:uppercase;
+}
+.login-btn {
+  display:flex; align-items:center; justify-content:center;
+  padding:10px 32px;
+  background:rgba(255,255,255,0.05);
+  border:1px solid rgba(255,255,255,0.15);
+  border-radius:4px;
+  color:rgba(255,255,255,0.75); font-family:'Inter',sans-serif;
+  font-size:12px; font-weight:600; letter-spacing:4px;
+  cursor:pointer; transition:all 0.22s ease;
+  text-transform:uppercase;
+}
+.login-btn:hover {
+  background:rgba(255,255,255,0.1);
+  border-color:rgba(255,255,255,0.35);
+  color:#fff;
+  transform:translateY(-1px);
+  box-shadow:0 8px 30px rgba(0,0,0,0.4);
+}
+.login-btn:active { transform:translateY(0); }
+.login-btn-arrow { display:none; }
+
 /* ─── 전역 리셋 & 변수 ─── */
 
 /* MEMBER OVERLAY */

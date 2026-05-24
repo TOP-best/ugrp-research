@@ -82,13 +82,14 @@ html,body { height:100%; font-family:var(--font); background:var(--bg); color:va
 /* LOGIN */
 .login-center {
   position:relative; z-index:1;
-  display:flex; flex-direction:column; align-items:center; justify-content:center;
-  height:100vh; padding:40px 20px; gap:52px;
+  display:flex; flex-direction:column; align-items:center;
+  justify-content:flex-start;
+  height:100vh; padding:60px 20px 40px; gap:0;
 }
-.login-quote { text-align:center; width:100%; padding:0 40px; }
+.login-quote { text-align:center; width:100%; padding:0 40px; margin-bottom:60px; }
 .login-quote blockquote {
   font-family:'Inter',sans-serif;
-  font-size:clamp(28px,4.8vw,68px);
+  font-size:clamp(24px,4.2vw,62px);
   font-weight:800; font-style:italic;
   color:#fff; letter-spacing:-2px; line-height:1.1;
   white-space:nowrap;
@@ -96,12 +97,31 @@ html,body { height:100%; font-family:var(--font); background:var(--bg); color:va
 }
 
 /* LOGIN HERO */
-.login-hero { display:flex; flex-direction:column; align-items:center; gap:16px; }
-.hero-logo { width:72px; height:72px; display:flex; align-items:center; justify-content:center; }
-.hero-logo img { width:72px; height:72px; object-fit:contain; filter:drop-shadow(0 0 20px rgba(255,255,255,0.15)); }
+.login-hero { display:flex; flex-direction:column; align-items:center; gap:20px; }
+.hero-logo { width:140px; height:140px; display:flex; align-items:center; justify-content:center; }
+.hero-logo img { width:140px; height:140px; object-fit:contain; filter:drop-shadow(0 0 30px rgba(255,255,255,0.2)); }
 .hero-text { text-align:center; }
 .hero-text h1 { font-family:'Inter',sans-serif; font-size:36px; font-weight:900; color:#fff; letter-spacing:-2px; line-height:1; }
 .hero-text p { font-size:12px; color:rgba(255,255,255,0.35); margin-top:5px; letter-spacing:3px; text-transform:uppercase; }
+.login-btn {
+  display:flex; align-items:center; justify-content:center;
+  padding:12px 48px;
+  background:rgba(255,255,255,0.08);
+  border:1px solid rgba(255,255,255,0.25);
+  border-radius:6px;
+  color:#fff; font-family:'Inter',sans-serif;
+  font-size:13px; font-weight:700; letter-spacing:4px;
+  cursor:pointer; transition:all 0.22s ease;
+  text-transform:uppercase;
+  box-shadow:0 0 30px rgba(255,255,255,0.05), inset 0 1px 0 rgba(255,255,255,0.1);
+}
+.login-btn:hover {
+  background:rgba(255,255,255,0.15);
+  border-color:rgba(255,255,255,0.5);
+  box-shadow:0 0 40px rgba(255,255,255,0.12), inset 0 1px 0 rgba(255,255,255,0.2);
+  transform:translateY(-2px);
+}
+.login-btn:active { transform:translateY(0); }
 
 /* LOGIN CARD */
 .login-card {

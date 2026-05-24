@@ -147,14 +147,18 @@
   <div class="tab" id="tab-profile">
     <div class="profile-banner" id="profileBanner">
       <button class="profile-back-btn" id="profileBackBtn"><i class="ti ti-arrow-left"></i></button>
-      <button class="profile-edit-btn" id="profileEditBtn"><i class="ti ti-pencil"></i> 편집</button>
+      <div class="banner-edit-overlay" id="bannerEditOverlay">
+        <i class="ti ti-camera"></i>
+        <span>배경 변경</span>
+      </div>
+      <input type="file" id="bannerFileInput" accept="image/*" style="display:none">
     </div>
     <div class="profile-body">
       <div class="profile-identity">
-        <div class="profile-avatar" id="profileAvatar" onclick="triggerAvatarUpload()">
+        <div class="profile-avatar" id="profileAvatar" id="profileAvatarWrap">
         <span id="profileAvatarEmoji">🔬</span>
         <img id="profileAvatarImg" style="display:none">
-        <div class="profile-avatar-overlay"><i class="ti ti-camera"></i></div>
+        <div class="profile-avatar-overlay" id="avatarEditOverlay"><i class="ti ti-camera"></i></div>
         <input type="file" id="avatarFileInput" accept="image/*" style="display:none">
       </div>
         <div>
@@ -162,7 +166,17 @@
           <div class="profile-role" id="profileRole"></div>
         </div>
       </div>
+      <div class="profile-bio-wrap">
       <div class="profile-bio" id="profileBio"></div>
+      <button class="bio-edit-btn" id="bioEditBtn" title="소개 편집"><i class="ti ti-pencil"></i></button>
+    </div>
+    <div class="bio-edit-form" id="bioEditForm" style="display:none">
+      <input type="text" id="bioInput" class="bio-input" placeholder="한 줄 소개를 입력하세요...">
+      <div class="bio-edit-btns">
+        <button class="bio-cancel" id="bioCancelBtn">취소</button>
+        <button class="bio-save" id="bioSaveBtn">저장</button>
+      </div>
+    </div>
       <div class="profile-stats" id="profileStats"></div>
       <div class="profile-recent" id="profileRecent"></div>
 

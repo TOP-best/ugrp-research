@@ -320,47 +320,34 @@ async function delComment(cid){
 }
 
 // ════ PROFILE ════
+const BANNERS=[
+  'linear-gradient(135deg,#1a1a2e,#16213e,#0f3460)',
+  'linear-gradient(135deg,#0f2318,#1a3d2b,#0d4a2f)',
+  'linear-gradient(135deg,#1a0a2e,#2d1060,#1a0a2e)',
+  'linear-gradient(135deg,#111,#2a2a2a,#111)',
+  'linear-gradient(135deg,#2e0a0a,#5c1010,#2e0a0a)',
+  'linear-gradient(135deg,#0a2e2e,#0f5555,#0a2e2e)',
+];
+const ANIMAL_EMOJIS=['🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼','🐨','🐯','🦁','🐮','🐷','🐸','🐵','🐔','🐧','🐦','🦆','🦉','🦋','🐢','🦖','🐬','🦈','🐙'];
+const OTHER_EMOJIS=['🔬','🧮','📐','🧠','⚡','🌌','🔭','🧪','📊','🎯','🚀','💡','🏆','🎲','🌠','🔮'];
+let newAvatarB64=null, newBannerB64=null, selEmoji=null, selBanner=null;
+
 function applyProfileDisplay(){
-  const img=$("profileAvatarImg"),emoji=$("profileAvatarEmoji");
+  const img=$("profileAvatarImg"), emoji=$("profileAvatarEmoji");
   if(CU.avatarImg){img.src=CU.avatarImg;img.style.display="";emoji.style.display="none";}
   else{img.style.display="none";emoji.style.display="";emoji.textContent=CU.avatar||"🔬";}
   if(CU.bannerImg)$("profileBanner").style.background=`url(${CU.bannerImg}) center/cover`;
   else $("profileBanner").style.background=CU.banner||BANNERS[0];
 }
 
-window.triggerAvatarUpload=()=>$("avatarFileInput").click();
-
-$("avatarFileInput").addEventListener("change",()=>{
-  const f=$("avatarFileInput").files[0];if(!f)return;
-  const reader=new FileReader();
-  reader.onload=e=>{
-    newAvatarB64=e.target.result;
-    $("profileAvatarImg").src=newAvatarB64;$("profileAvatarImg").style.display="";
-    $("profileAvatarEmoji").style.display="none";
-    if($("pefAvatarPreviewImg")){$("pefAvatarPreviewImg").src=newAvatarB64;$("pefAvatarPreview").style.display="flex";}
-  };
-  reader.readAsDataURL(f);
-});
-
-$("bannerFileInput").addEventListener("change",()=>{
-  const f=$("bannerFileInput").files[0];if(!f)return;
-  const reader=new FileReader();
-  reader.onload=e=>{
-    newBannerB64=e.target.result;
-    $("profileBanner").style.background=`url(${newBannerB64}) center/cover`;
-    $("pefBannerPreviewImg").src=newBannerB64;$("pefBannerPreview").style.display="flex";
-  };
-  reader.readAsDataURL(f);
-});
-
-window.clearAvatarPreview=()=>{newAvatarB64=null;$("pefAvatarPreview").style.display="none";applyProfileDisplay();$("avatarFileInput").value="";};
-window.clearBannerPreview=()=>{newBannerB64=null;$("pefBannerPreview").style.display="none";applyProfileDisplay();$("bannerFileInput").value="";};
-
 function openProfile(){
   if(!CU)return;
   document.querySelectorAll(".nav-btn").forEach(b=>b.classList.remove("active"));
   $("profileEditForm").style.display="none";
-  newAvatarB64=null;newBannerB64=null;
+  $("avatarPickPanel").style.display="none";
+  $("bannerPickPanel").style.display="none";
+  $("bioEditForm").style.display="none";
+  newAvatarB64=null; newBannerB64=null; selEmoji=null; selBanner=null;
   applyProfileDisplay();
   $("profileName").textContent=CU.name;
   $("profileRole").textContent=CU.role||"Researcher";
@@ -390,53 +377,127 @@ $("profileBackBtn").addEventListener("click",()=>{
   document.querySelector(".nav-btn[data-tab='timer']")?.classList.add("active");
 });
 
-$("profileEditBtn").addEventListener("click",()=>{
-  const form=$("profileEditForm");
-  if(form.style.display==="none"||!form.style.display){
-    form.style.display="block";
-    newAvatarB64=null;newBannerB64=null;
-    $("pefName").value=CU.name;
-    $("pefBio").value=CU.bio||"";
-    $("pefPw").value="";$("pefMsg").textContent="";
-    $("pefAvatarPreview").style.display="none";
-    $("pefBannerPreview").style.display="none";
-    $("avatarFileInput").value="";$("bannerFileInput").value="";
-  }else{
-    form.style.display="none";newAvatarB64=null;newBannerB64=null;applyProfileDisplay();
-  }
+// 배너 클릭 → 배너 선택 패널
+$("profileBanner").addEventListener("click", e=>{
+  if(e.target.closest(".profile-back-btn")) return;
+  const panel=$("bannerPickPanel");
+  const isOpen=panel.style.display!=="none";
+  $("avatarPickPanel").style.display="none";
+  $("profileEditForm").style.display="none";
+  if(isOpen){ panel.style.display="none"; return; }
+  // 배너 프리셋 렌더
+  selBanner=CU.banner||BANNERS[0];
+  $("bannerPresets").innerHTML=BANNERS.map((b,i)=>`
+    <div class="banner-preset-btn${b===selBanner?' selected':''}" data-i="${i}" style="background:${b}"></div>`).join("");
+  $("bannerPresets").querySelectorAll(".banner-preset-btn").forEach(btn=>{
+    btn.addEventListener("click",()=>{
+      selBanner=BANNERS[+btn.dataset.i];
+      $("bannerPresets").querySelectorAll(".banner-preset-btn").forEach(b=>b.classList.toggle("selected",b===btn));
+      newBannerB64=null; $("pefBannerPreview").style.display="none";
+      $("profileBanner").style.background=selBanner;
+    });
+  });
+  $("pefBannerPreview").style.display="none";
+  panel.style.display="block";
 });
 
-$("pefCancel").addEventListener("click",()=>{
-  $("profileEditForm").style.display="none";newAvatarB64=null;newBannerB64=null;applyProfileDisplay();
+// 배너 업로드
+$("bannerUploadBtn").addEventListener("click",()=>$("bannerFileInput").click());
+$("bannerFileInput").addEventListener("change",()=>{
+  const f=$("bannerFileInput").files[0]; if(!f)return;
+  new FileReader().onload=e=>{
+    newBannerB64=e.target.result;
+    $("profileBanner").style.background=`url(${newBannerB64}) center/cover`;
+    $("pefBannerPreviewImg").src=newBannerB64; $("pefBannerPreview").style.display="flex";
+    $("bannerPresets").querySelectorAll(".banner-preset-btn").forEach(b=>b.classList.remove("selected"));
+    selBanner=null;
+  }; Object.assign(new FileReader(),{onload:e=>{newBannerB64=e.target.result;$("profileBanner").style.background=`url(${newBannerB64}) center/cover`;$("pefBannerPreviewImg").src=newBannerB64;$("pefBannerPreview").style.display="flex";selBanner=null;$("bannerPresets").querySelectorAll(".banner-preset-btn").forEach(b=>b.classList.remove("selected"));}}).readAsDataURL(f);
+});
+$("clearBannerBtn").addEventListener("click",()=>{newBannerB64=null;$("pefBannerPreview").style.display="none";$("bannerFileInput").value="";applyProfileDisplay();});
+$("bannerPickCancel").addEventListener("click",()=>{$("bannerPickPanel").style.display="none";newBannerB64=null;selBanner=null;applyProfileDisplay();});
+$("bannerPickSave").addEventListener("click",async()=>{
+  const update={};
+  if(newBannerB64){update.bannerImg=newBannerB64;CU.bannerImg=newBannerB64;delete CU.banner;}
+  else if(selBanner){update.bannerImg=null;update.banner=selBanner;CU.banner=selBanner;CU.bannerImg=null;}
+  if(Object.keys(update).length){await setDoc(doc(db,"profiles",CU.id),update,{merge:true});}
+  $("bannerPickPanel").style.display="none";newBannerB64=null;selBanner=null;applyProfileDisplay();
 });
 
-$("pefSave").addEventListener("click",async()=>{
-  const name=$("pefName").value.trim(),bio=$("pefBio").value.trim(),pw=$("pefPw").value.trim();
-  if(!name){$("pefMsg").style.color="#f87171";$("pefMsg").textContent="이름을 입력해주세요";return;}
-  $("pefSave").textContent="저장 중...";$("pefSave").disabled=true;
-  const update={name,bio};
-  if(newAvatarB64)update.avatarImg=newAvatarB64;
-  if(newBannerB64)update.bannerImg=newBannerB64;
-  if(pw)update.pw=pw;
-  await setDoc(doc(db,"profiles",CU.id),update,{merge:true});
-  CU.name=name;CU.bio=bio;
-  if(newAvatarB64)CU.avatarImg=newAvatarB64;
-  if(newBannerB64)CU.bannerImg=newBannerB64;
-  if(pw)CU.pw=pw;
+// 아바타 클릭 → 아바타 선택 패널
+$("profileAvatar").addEventListener("click",()=>{
+  const panel=$("avatarPickPanel");
+  const isOpen=panel.style.display!=="none";
+  $("bannerPickPanel").style.display="none";
+  $("profileEditForm").style.display="none";
+  if(isOpen){panel.style.display="none";return;}
+  selEmoji=CU.avatar||null;
+  $("animalEmojiGrid").innerHTML=ANIMAL_EMOJIS.map(e=>`<button class="emoji-btn${e===selEmoji?' selected':''}" data-e="${e}">${e}</button>`).join("");
+  $("otherEmojiGrid").innerHTML=OTHER_EMOJIS.map(e=>`<button class="emoji-btn${e===selEmoji?' selected':''}" data-e="${e}">${e}</button>`).join("");
+  [$("animalEmojiGrid"),$("otherEmojiGrid")].forEach(grid=>{
+    grid.querySelectorAll(".emoji-btn").forEach(btn=>{
+      btn.addEventListener("click",()=>{
+        selEmoji=btn.dataset.e; newAvatarB64=null;
+        $("pefAvatarPreview").style.display="none"; $("avatarFileInput").value="";
+        document.querySelectorAll(".emoji-btn").forEach(b=>b.classList.toggle("selected",b===btn));
+        $("profileAvatarEmoji").textContent=selEmoji; $("profileAvatarImg").style.display="none"; $("profileAvatarEmoji").style.display="";
+      });
+    });
+  });
+  $("pefAvatarPreview").style.display="none";
+  panel.style.display="block";
+});
+
+// 아바타 업로드
+$("avatarUploadBtn").addEventListener("click",()=>$("avatarFileInput").click());
+$("avatarFileInput").addEventListener("change",()=>{
+  const f=$("avatarFileInput").files[0]; if(!f)return;
+  Object.assign(new FileReader(),{onload:e=>{newAvatarB64=e.target.result;selEmoji=null;$("profileAvatarImg").src=newAvatarB64;$("profileAvatarImg").style.display="";$("profileAvatarEmoji").style.display="none";$("pefAvatarPreviewImg").src=newAvatarB64;$("pefAvatarPreview").style.display="flex";document.querySelectorAll(".emoji-btn").forEach(b=>b.classList.remove("selected"));}}).readAsDataURL(f);
+});
+$("clearAvatarBtn").addEventListener("click",()=>{newAvatarB64=null;selEmoji=null;$("pefAvatarPreview").style.display="none";$("avatarFileInput").value="";applyProfileDisplay();});
+$("avatarPickCancel").addEventListener("click",()=>{$("avatarPickPanel").style.display="none";newAvatarB64=null;selEmoji=null;applyProfileDisplay();});
+$("avatarPickSave").addEventListener("click",async()=>{
+  const update={};
+  if(newAvatarB64){update.avatarImg=newAvatarB64;CU.avatarImg=newAvatarB64;delete CU.avatar;}
+  else if(selEmoji){update.avatar=selEmoji;update.avatarImg=null;CU.avatar=selEmoji;CU.avatarImg=null;}
+  if(Object.keys(update).length){await setDoc(doc(db,"profiles",CU.id),update,{merge:true});}
   const idx=USERS.findIndex(u=>u.id===CU.id);
-  if(idx>=0){USERS[idx].name=name;USERS[idx].bio=bio;if(newAvatarB64)USERS[idx].avatarImg=newAvatarB64;if(newBannerB64)USERS[idx].bannerImg=newBannerB64;if(pw)USERS[idx].pw=pw;}
-  $("chipName").textContent=CU.name;$("profileName").textContent=CU.name;
-  applyProfileDisplay();
+  if(idx>=0){if(CU.avatarImg)USERS[idx].avatarImg=CU.avatarImg;if(CU.avatar)USERS[idx].avatar=CU.avatar;}
+  $("avatarPickPanel").style.display="none";newAvatarB64=null;selEmoji=null;applyProfileDisplay();
+});
+
+// 소개 편집
+$("bioEditBtn").addEventListener("click",()=>{
+  $("bioEditForm").style.display="block";
+  $("bioInput").value=CU.bio||"";
+  $("bioInput").focus();
+});
+$("bioCancelBtn").addEventListener("click",()=>{$("bioEditForm").style.display="none";});
+$("bioSaveBtn").addEventListener("click",async()=>{
+  const bio=$("bioInput").value.trim();
+  await setDoc(doc(db,"profiles",CU.id),{bio},{merge:true});
+  CU.bio=bio;
   if(bio){$("profileBio").textContent=bio;$("profileBio").classList.remove("empty");}
   else{$("profileBio").textContent="소개를 작성해보세요";$("profileBio").classList.add("empty");}
-  const nameEl=$(`mpName${idx}`);if(nameEl)nameEl.textContent=name;
-  $("pefMsg").style.color="#10b981";$("pefMsg").textContent="저장됐습니다 ✓";
-  $("pefSave").textContent="저장";$("pefSave").disabled=false;
-  newAvatarB64=null;newBannerB64=null;
-  setTimeout(()=>{$("profileEditForm").style.display="none";},1000);
+  $("bioEditForm").style.display="none";
 });
 
-// ════ INIT ════
+// 이름/비번 편집
+$("profileEditForm") && [$("pefCancel"),$("pefSave")].forEach(el=>el&&el.addEventListener("click", async(e)=>{
+  if(e.target.id==="pefCancel"){$("profileEditForm").style.display="none";return;}
+  const name=$("pefName").value.trim(), pw=$("pefPw").value.trim();
+  if(!name){$("pefMsg").style.color="#f87171";$("pefMsg").textContent="이름을 입력해주세요";return;}
+  const update={name}; if(pw)update.pw=pw;
+  await setDoc(doc(db,"profiles",CU.id),update,{merge:true});
+  CU.name=name; if(pw)CU.pw=pw;
+  const idx=USERS.findIndex(u=>u.id===CU.id);
+  if(idx>=0){USERS[idx].name=name;if(pw)USERS[idx].pw=pw;}
+  $("chipName").textContent=name; $("profileName").textContent=name;
+  const nameEl=$(`mpName${idx}`); if(nameEl)nameEl.textContent=name;
+  $("pefMsg").style.color="#10b981";$("pefMsg").textContent="저장됐습니다 ✓";
+  setTimeout(()=>$("profileEditForm").style.display="none",1000);
+}));
+
+// ════ INIT ════// ════ INIT ════
 
 // Canvas 배경
 const canvas = document.getElementById('bgCanvas');

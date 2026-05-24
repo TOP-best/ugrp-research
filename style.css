@@ -539,3 +539,51 @@ html,body { height:100%; font-family:var(--font); background:var(--bg); color:va
 .pef-save { flex:2; padding:11px; background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.18); border-radius:7px; color:#fff; font-size:13px; font-weight:700; cursor:pointer; transition:all .15s; font-family:var(--font); }
 .pef-save:hover { background:rgba(255,255,255,0.18); }
 .pef-msg { font-size:12px; color:#10b981; text-align:center; margin-top:10px; min-height:16px; }
+
+/* ── 배너 편집 오버레이 ── */
+.profile-banner { cursor:pointer; }
+.banner-edit-overlay {
+  position:absolute; inset:0; border-radius:12px 12px 0 0;
+  background:rgba(0,0,0,0.5);
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:6px; color:white; font-size:13px; font-weight:500;
+  opacity:0; transition:opacity .2s;
+  pointer-events:none;
+}
+.banner-edit-overlay i { font-size:28px; }
+.profile-banner:hover .banner-edit-overlay { opacity:1; }
+
+/* ── 소개 편집 ── */
+.profile-bio-wrap { display:flex; align-items:center; gap:8px; margin-bottom:20px; padding-bottom:20px; border-bottom:1px solid rgba(255,255,255,0.07); }
+.profile-bio { font-size:14px; color:rgba(255,255,255,.5); line-height:1.6; flex:1; min-height:20px; }
+.profile-bio.empty { color:rgba(255,255,255,.2); font-style:italic; }
+.bio-edit-btn { background:none; border:none; color:rgba(255,255,255,.3); cursor:pointer; font-size:14px; padding:4px; transition:color .15s; flex-shrink:0; }
+.bio-edit-btn:hover { color:#fff; }
+.bio-edit-form { margin:-12px 0 16px; padding-bottom:16px; border-bottom:1px solid rgba(255,255,255,0.07); }
+.bio-input { width:100%; padding:10px 13px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.15); border-radius:8px; color:#fff; font-size:14px; font-family:var(--font); margin-bottom:8px; }
+.bio-input:focus { outline:none; border-color:rgba(255,255,255,.3); }
+.bio-edit-btns { display:flex; gap:8px; }
+.bio-cancel { padding:7px 14px; background:none; border:1px solid rgba(255,255,255,.1); border-radius:7px; color:rgba(255,255,255,.5); font-size:12px; cursor:pointer; font-family:var(--font); }
+.bio-save { padding:7px 16px; background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.2); border-radius:7px; color:#fff; font-size:12px; font-weight:600; cursor:pointer; font-family:var(--font); }
+.bio-save:hover { background:rgba(255,255,255,.18); }
+
+/* ── 아바타/배너 선택 패널 ── */
+.avatar-pick-panel {
+  margin-top:20px; padding:20px;
+  background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08);
+  border-radius:12px;
+}
+.app-title { font-size:14px; font-weight:700; color:#fff; margin-bottom:14px; }
+.app-section-label { font-size:11px; font-weight:600; color:rgba(255,255,255,.35); text-transform:uppercase; letter-spacing:.6px; margin-bottom:8px; }
+.emoji-grid { display:flex; flex-wrap:wrap; gap:6px; }
+.emoji-btn { width:42px; height:42px; border-radius:10px; background:rgba(255,255,255,0.06); border:2px solid transparent; cursor:pointer; font-size:22px; display:flex; align-items:center; justify-content:center; transition:all .15s; }
+.emoji-btn:hover { background:rgba(255,255,255,0.12); }
+.emoji-btn.selected { border-color:#fff; background:rgba(255,255,255,0.15); }
+.banner-presets { display:flex; gap:8px; flex-wrap:wrap; }
+.banner-preset-btn { width:60px; height:36px; border-radius:8px; border:2px solid transparent; cursor:pointer; transition:all .15s; }
+.banner-preset-btn:hover { transform:scale(1.05); }
+.banner-preset-btn.selected { border-color:#fff; }
+.app-btns { display:flex; gap:8px; margin-top:16px; }
+.app-cancel { flex:1; padding:10px; background:none; border:1px solid rgba(255,255,255,.1); border-radius:7px; color:rgba(255,255,255,.5); font-size:13px; cursor:pointer; font-family:var(--font); }
+.app-save { flex:2; padding:10px; background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.2); border-radius:7px; color:#fff; font-size:13px; font-weight:700; cursor:pointer; font-family:var(--font); }
+.app-save:hover { background:rgba(255,255,255,.18); }

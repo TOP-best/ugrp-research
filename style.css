@@ -453,3 +453,11 @@ html,body { height:100%; font-family:var(--font); background:var(--bg); color:va
   background:rgba(99,102,241,0.1);
   color:#a5b4fc;
 }
+
+/* Drag & drop refinement */
+.day-file-row[draggable="true"], .day-folder[draggable="true"] .day-folder-row { cursor:grab; }
+.day-file-row[draggable="true"]:active, .day-folder[draggable="true"] .day-folder-row:active { cursor:grabbing; }
+.day-folder-toggle, .day-folder-del, .day-file-del { cursor:pointer; }
+.drop-before { box-shadow: inset 0 2px 0 rgba(99,102,241,.9); }
+.drop-after { box-shadow: inset 0 -2px 0 rgba(99,102,241,.9); }
+.folder-new-btn-below { width:100%; margin-top:8px; display:flex; align-items:center; justify-content:center; gap:6px; }

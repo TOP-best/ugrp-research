@@ -377,8 +377,10 @@ function renderDayFileList(){
       ch.style.display=open?"none":"flex";
       if(!open){ch.style.flexDirection="column";ch.style.gap="4px";}
       btn.querySelector("i").className=`ti ${open?"ti-chevron-down":"ti-chevron-up"}`;
-      // 폴더 열릴 때 안의 파일들에 드래그 이벤트 재등록
-      if(!open) setupDragDrop(list);
+      // 폴더 열릴 때 안의 파일들에 드래그 이벤트 등록
+      if(!open && list._attachFileRow){
+        ch.querySelectorAll(".day-file-row").forEach(list._attachFileRow);
+      }
     });
   });
 
@@ -444,7 +446,7 @@ function makeFileEl(f, folderId){
 function setupDragDrop(list){
   let dragId=null, dragType=null, dragFromFolder=null;
 
-  // rootZone 초기화
+  // rootZone
   let rootZone=document.getElementById("rootDropZone");
   if(rootZone) rootZone.remove();
   rootZone=document.createElement("div");
@@ -472,18 +474,19 @@ function setupDragDrop(list){
     list.querySelectorAll(".drag-over-item,.drag-over-folder").forEach(x=>x.classList.remove("drag-over-item","drag-over-folder"));
   }
 
-  // 파일 row: grip에서만 드래그 허용 (클릭 시 어두워짐 방지)
-  list.querySelectorAll(".day-file-row").forEach(el=>{
-    el.draggable=true;
+  function attachFileRow(el){
     el.addEventListener("dragstart",e=>{
+      e.stopPropagation(); // 폴더로 버블링 방지
       dragId=el.dataset.id;
-      dragType=el.dataset.type;
+      dragType="file";
       dragFromFolder=el.dataset.folderId||null;
       e.dataTransfer.effectAllowed="move";
+      e.dataTransfer.setData("text/plain",dragId);
       setTimeout(()=>el.classList.add("dragging"),0);
       if(dragFromFolder) rootZone.style.display="flex";
     });
-    el.addEventListener("dragend",()=>{
+    el.addEventListener("dragend",e=>{
+      e.stopPropagation();
       el.classList.remove("dragging");
       clearHL();
       rootZone.style.display="none";
@@ -524,56 +527,71 @@ function setupDragDrop(list){
       }
       loadDayData();
     });
-  });
+  }
 
-  // 폴더: grip에서만 드래그, 폴더끼리 순서 변경
-  list.querySelectorAll(".day-folder").forEach(el=>{
-    el.draggable=true;
-    el.addEventListener("dragstart",e=>{
-      dragId=el.dataset.id;
+  // 모든 파일 row (폴더 안 포함) 이벤트 등록
+  list.querySelectorAll(".day-file-row").forEach(attachFileRow);
+
+  // 폴더 element 이벤트
+  list.querySelectorAll(".day-folder").forEach(folderEl=>{
+    folderEl.addEventListener("dragstart",e=>{
+      // 파일 row에서 버블링된 거면 무시
+      if(e.target.closest(".day-file-row")) return;
+      dragId=folderEl.dataset.id;
       dragType="folder";
       dragFromFolder=null;
       e.dataTransfer.effectAllowed="move";
-      setTimeout(()=>el.classList.add("dragging"),0);
+      e.dataTransfer.setData("text/plain",dragId);
+      setTimeout(()=>folderEl.classList.add("dragging"),0);
     });
-    el.addEventListener("dragend",()=>{
-      el.classList.remove("dragging");
+    folderEl.addEventListener("dragend",e=>{
+      if(e.target.closest(".day-file-row")) return;
+      folderEl.classList.remove("dragging");
       clearHL();
       dragId=null;dragType=null;dragFromFolder=null;
     });
-    el.addEventListener("dragover",e=>{
-      if(!dragId||el.dataset.id===dragId)return;
-      e.preventDefault();e.stopPropagation();
-      clearHL();
-      if(dragType==="file") el.classList.add("drag-over-folder");
-      else el.classList.add("drag-over-item");
-    });
-    el.addEventListener("dragleave",e=>{
-      if(!el.contains(e.relatedTarget)) el.classList.remove("drag-over-item","drag-over-folder");
-    });
-    el.addEventListener("drop",async e=>{
-      e.preventDefault();e.stopPropagation();
-      clearHL();
-      if(!dragId||el.dataset.id===dragId)return;
-      // 파일 → 이 폴더 안으로
+    folderEl.addEventListener("dragover",e=>{
+      if(!dragId||folderEl.dataset.id===dragId)return;
+      // 파일 드래그 중: 폴더 안으로
       if(dragType==="file"){
-        if(dragFromFolder===el.dataset.id)return;
-        await updateDoc(doc(db,"fileItems",dragId),{folderId:el.dataset.id,order:9999});
+        e.preventDefault();e.stopPropagation();
+        clearHL();
+        folderEl.classList.add("drag-over-folder");
+        return;
+      }
+      // 폴더 드래그 중: 순서 변경
+      if(dragType==="folder"){
+        e.preventDefault();e.stopPropagation();
+        clearHL();
+        folderEl.classList.add("drag-over-item");
+      }
+    });
+    folderEl.addEventListener("dragleave",e=>{
+      if(!folderEl.contains(e.relatedTarget)) folderEl.classList.remove("drag-over-item","drag-over-folder");
+    });
+    folderEl.addEventListener("drop",async e=>{
+      e.preventDefault();e.stopPropagation();
+      clearHL();
+      if(!dragId||folderEl.dataset.id===dragId)return;
+      if(dragType==="file"){
+        if(dragFromFolder===folderEl.dataset.id)return;
+        await updateDoc(doc(db,"fileItems",dragId),{folderId:folderEl.dataset.id,order:9999});
         showToast("폴더로 이동됐습니다");loadDayData();return;
       }
-      // 폴더끼리 순서 변경
-      const pool=[...dayFolders].sort((a,b)=>(a.order||0)-(b.order||0));
-      const si=pool.findIndex(x=>x.id===dragId);
-      const ti=pool.findIndex(x=>x.id===el.dataset.id);
-      if(si<0||ti<0){loadDayData();return;}
-      const moved=pool.splice(si,1)[0];
-      pool.splice(ti,0,moved);
-      await Promise.all(pool.map((it,i)=>updateDoc(doc(db,"fileItems",it.id),{order:i})));
-      loadDayData();
+      if(dragType==="folder"){
+        const pool=[...dayFolders].sort((a,b)=>(a.order||0)-(b.order||0));
+        const si=pool.findIndex(x=>x.id===dragId);
+        const ti=pool.findIndex(x=>x.id===folderEl.dataset.id);
+        if(si<0||ti<0){loadDayData();return;}
+        const moved=pool.splice(si,1)[0];
+        pool.splice(ti,0,moved);
+        await Promise.all(pool.map((it,i)=>updateDoc(doc(db,"fileItems",it.id),{order:i})));
+        loadDayData();
+      }
     });
   });
 
-  // 폴더 children 드롭존 (파일을 열린 폴더 빈 공간에 드롭)
+  // 폴더 children 빈 공간 드롭존
   list.querySelectorAll(".day-folder-children").forEach(ch=>{
     ch.addEventListener("dragover",e=>{
       if(!dragId||dragType!=="file")return;
@@ -588,6 +606,9 @@ function setupDragDrop(list){
       showToast("폴더로 이동됐습니다");loadDayData();
     });
   });
+
+  // 폴더 토글 시 새로 열린 파일들에도 이벤트 등록
+  list._attachFileRow=attachFileRow;
 }
 
 function renderFolderSelect(){

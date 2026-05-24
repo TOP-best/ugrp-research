@@ -264,21 +264,6 @@
 
 <div class="toast" id="toast"></div>
 <script type="module" src="app.js"></script>
-<script>
-const canvas = document.getElementById('bgCanvas');
-if(canvas){
-  const ctx = canvas.getContext('2d');
-  let W,H,particles=[];
-  function resize(){W=canvas.width=window.innerWidth;H=canvas.height=window.innerHeight;}
-  resize(); window.addEventListener('resize',resize);
-  class Particle{constructor(){this.reset(true);}reset(init){this.x=Math.random()*W;this.y=init?Math.random()*H:Math.random()*H;this.r=Math.random()*1.1+0.2;this.alpha=Math.random()*0.4+0.08;this.vx=(Math.random()-.5)*.25;this.vy=(Math.random()-.5)*.25;this.life=Math.random()*300+100;this.maxLife=this.life;}update(){this.x+=this.vx;this.y+=this.vy;this.life--;if(this.life<=0||this.x<0||this.x>W||this.y<0||this.y>H)this.reset(false);}draw(){const f=this.life/this.maxLife;ctx.beginPath();ctx.arc(this.x,this.y,this.r,0,Math.PI*2);ctx.fillStyle=`rgba(255,255,255,${this.alpha*f})`;ctx.fill();}}
-  for(let i=0;i<100;i++)particles.push(new Particle());
-  function animate(){ctx.clearRect(0,0,W,H);const g=ctx.createRadialGradient(W/2,H*.25,0,W/2,H*.25,W*.8);g.addColorStop(0,'rgba(24,24,28,1)');g.addColorStop(1,'rgba(6,6,8,1)');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);ctx.strokeStyle='rgba(255,255,255,0.028)';ctx.lineWidth=1;for(let x=0;x<W;x+=56){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}for(let y=0;y<H;y+=56){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}particles.forEach(p=>{p.update();p.draw();});requestAnimationFrame(animate);}
-  animate();
-}
-document.getElementById('loginBtn').addEventListener('click',()=>{document.getElementById('memberOverlay').style.display='flex';});
-document.getElementById('mpClose').addEventListener('click',()=>{document.getElementById('memberOverlay').style.display='none';document.getElementById('pwSection').style.display='none';document.getElementById('mpMembers').style.display='flex';});
-document.getElementById('memberOverlay').addEventListener('click',e=>{if(e.target===document.getElementById('memberOverlay')){document.getElementById('memberOverlay').style.display='none';document.getElementById('pwSection').style.display='none';document.getElementById('mpMembers').style.display='flex';}});
-</script>
+
 </body>
 </html>

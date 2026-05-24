@@ -79,24 +79,16 @@ async function loadAllProfiles(){
   }catch(e){}
 }
 
-// ════ LOGIN — window에 노출 ════
-window.pickUser = function(i){
+// ════ LOGIN ════
+function pickUser(i){
   pickIdx=i;
   $("mpMembers").style.display="none";
   $("pwSection").style.display="block";
   $("pwInput").focus();
   $("pwErr").textContent="";
-};
+}
 
-window.pwBackClick = function(){
-  pickIdx=-1;
-  $("mpMembers").style.display="flex";
-  $("pwSection").style.display="none";
-};
-
-window.pwKeydown = function(e){ if(e.key==="Enter") window.doLogin(); };
-
-window.doLogin = function(){
+function doLogin(){
   if(pickIdx<0)return;
   const u=USERS[pickIdx];
   if($("pwInput").value!==u.pw){$("pwErr").textContent="비밀번호가 틀렸습니다";return;}
@@ -445,4 +437,16 @@ $("pefSave").addEventListener("click",async()=>{
 });
 
 // ════ INIT ════
+// 멤버 버튼 이벤트
+document.querySelectorAll(".mp-member").forEach(btn=>{
+  btn.addEventListener("click", ()=>pickUser(+btn.dataset.idx));
+});
+$("pwBack").addEventListener("click", ()=>{
+  pickIdx=-1;
+  $("mpMembers").style.display="flex";
+  $("pwSection").style.display="none";
+});
+$("pwInput").addEventListener("keydown", e=>{ if(e.key==="Enter") doLogin(); });
+$("pwBtn").addEventListener("click", doLogin);
+
 loadAllProfiles();

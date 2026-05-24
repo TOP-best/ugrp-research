@@ -37,27 +37,27 @@
       <button class="mp-close" id="mpClose"><i class="ti ti-x"></i></button>
     </div>
     <div class="mp-members" id="mpMembers">
-      <button class="mp-member" data-idx="0" onclick="pickUser(0)">
+      <button class="mp-member" data-idx="0">
         <div class="mp-av av0" id="mpAv0">김</div>
         <div class="mp-info"><span class="mp-name" id="mpName0">김민준</span><span class="mp-role">Researcher A</span></div>
         <i class="ti ti-chevron-right mp-chevron"></i>
       </button>
-      <button class="mp-member" data-idx="1" onclick="pickUser(1)">
+      <button class="mp-member" data-idx="1">
         <div class="mp-av av1" id="mpAv1">이</div>
         <div class="mp-info"><span class="mp-name" id="mpName1">이서연</span><span class="mp-role">Researcher B</span></div>
         <i class="ti ti-chevron-right mp-chevron"></i>
       </button>
-      <button class="mp-member" data-idx="2" onclick="pickUser(2)">
+      <button class="mp-member" data-idx="2">
         <div class="mp-av av2" id="mpAv2">박</div>
         <div class="mp-info"><span class="mp-name" id="mpName2">박지호</span><span class="mp-role">Researcher C</span></div>
         <i class="ti ti-chevron-right mp-chevron"></i>
       </button>
     </div>
     <div id="pwSection" style="display:none">
-      <button id="pwBack" class="pw-back" onclick="pwBackClick()"><i class="ti ti-arrow-left"></i> 뒤로</button>
+      <button id="pwBack" class="pw-back"><i class="ti ti-arrow-left"></i> 뒤로</button>
       <div class="pw-row">
-        <input type="password" id="pwInput" class="pw-input" placeholder="Password" onkeydown="pwKeydown(event)">
-        <button id="pwBtn" class="pw-btn" onclick="doLogin()">→</button>
+        <input type="password" id="pwInput" class="pw-input" placeholder="Password">
+        <button id="pwBtn" class="pw-btn">→</button>
       </div>
       <div id="pwErr" class="pw-err"></div>
     </div>

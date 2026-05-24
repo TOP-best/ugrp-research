@@ -379,21 +379,6 @@ function renderDayFileList(){
     });
   });
 
-  // 삭제
-  list.querySelectorAll(".day-file-del").forEach(btn=>{
-    btn.addEventListener("click",async e=>{
-      e.stopPropagation();
-      if(!confirm("삭제할까요?"))return;
-      await deleteDoc(doc(db,"fileItems",btn.dataset.id));
-      showToast("삭제됐습니다");loadDayData();
-    });
-  });
-
-  // 파일 클릭 → URL 열기
-  list.querySelectorAll(".day-file-name[data-url]").forEach(el=>{
-    el.addEventListener("click",e=>{e.stopPropagation();if(el.dataset.url)window.open(el.dataset.url,"_blank");});
-  });
-
   setupDragDrop(list);
 }
 
@@ -413,6 +398,21 @@ function makeFileEl(f, folderId){
     <span class="day-file-name" data-url="${esc(f.url||'')}">${esc(f.title)}</span>
     ${f.note?`<span class="day-file-note">${esc(f.note)}</span>`:''}
     ${canDel?`<button class="day-file-del" data-id="${f.id}"><i class="ti ti-trash"></i></button>`:''}`;
+  // 파일명 클릭 → URL 열기 (여기서 직접 달아야 폴더 안 파일도 동작)
+  const nameEl=el.querySelector(".day-file-name");
+  if(nameEl&&f.url){
+    nameEl.addEventListener("click",e=>{e.stopPropagation();window.open(f.url,"_blank");});
+  }
+  // 삭제 버튼
+  const delBtn=el.querySelector(".day-file-del");
+  if(delBtn){
+    delBtn.addEventListener("click",async e=>{
+      e.stopPropagation();
+      if(!confirm("삭제할까요?"))return;
+      await deleteDoc(doc(db,"fileItems",delBtn.dataset.id));
+      showToast("삭제됐습니다");loadDayData();
+    });
+  }
   return el;
 }
 

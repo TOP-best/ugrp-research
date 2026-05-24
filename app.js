@@ -26,13 +26,15 @@ let USERS = BASE_USERS.map(u=>({...u}));
 let CU=null, pickIdx=-1, weekOff=0, addDate=null;
 let viewItem=null, timerInterval=null, timerStart=null, statPeriod="week";
 let unsubFiles=null;
-let newAvatarB64=null, newBannerB64=null;
+let newAvatarB64=null, newBannerB64=null, selEmoji=null, selBanner=null;
 
 const BANNERS=[
   'linear-gradient(135deg,#1a1a2e,#16213e,#0f3460)',
   'linear-gradient(135deg,#0f2318,#1a3d2b,#0d4a2f)',
   'linear-gradient(135deg,#1a0a2e,#2d1060,#1a0a2e)',
   'linear-gradient(135deg,#111,#2a2a2a,#111)',
+  'linear-gradient(135deg,#2e0a0a,#5c1010,#2e0a0a)',
+  'linear-gradient(135deg,#0a2e2e,#0f5555,#0a2e2e)',
 ];
 
 const $=id=>document.getElementById(id);
@@ -190,7 +192,7 @@ async function renderStats(){
   const all=await getSessions();
   let filtered=all;
   if(statPeriod==="week")filtered=all.filter(s=>s.date>=dateStr(weekStart()));
-  if(statPeriod==="month"){const m=new Date();m.setDate(1);m.setHours(0,0,0,0);filtered=all.filter(s=>s.start>=m.getTime());}
+  if(statPeriod==="month"){const m=new Date();m.setDate(1);m.setHours(0,0,0,0);const mStr=dateStr(m);filtered=all.filter(s=>s.date>=mStr);}
   const byUser={};USERS.forEach(u=>{byUser[u.id]={sec:0,days:new Set(),cnt:0};});
   filtered.forEach(s=>{if(byUser[s.userId]){byUser[s.userId].sec+=s.duration;byUser[s.userId].days.add(s.date);byUser[s.userId].cnt++;}});
   const ranked=USERS.map(u=>({u,sec:byUser[u.id].sec,days:byUser[u.id].days.size})).sort((a,b)=>b.sec-a.sec);
@@ -320,17 +322,8 @@ async function delComment(cid){
 }
 
 // ════ PROFILE ════
-const BANNERS=[
-  'linear-gradient(135deg,#1a1a2e,#16213e,#0f3460)',
-  'linear-gradient(135deg,#0f2318,#1a3d2b,#0d4a2f)',
-  'linear-gradient(135deg,#1a0a2e,#2d1060,#1a0a2e)',
-  'linear-gradient(135deg,#111,#2a2a2a,#111)',
-  'linear-gradient(135deg,#2e0a0a,#5c1010,#2e0a0a)',
-  'linear-gradient(135deg,#0a2e2e,#0f5555,#0a2e2e)',
-];
 const ANIMAL_EMOJIS=['🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼','🐨','🐯','🦁','🐮','🐷','🐸','🐵','🐔','🐧','🐦','🦆','🦉','🦋','🐢','🦖','🐬','🦈','🐙'];
 const OTHER_EMOJIS=['🔬','🧮','📐','🧠','⚡','🌌','🔭','🧪','📊','🎯','🚀','💡','🏆','🎲','🌠','🔮'];
-let newAvatarB64=null, newBannerB64=null, selEmoji=null, selBanner=null;
 
 function applyProfileDisplay(){
   const img=$("profileAvatarImg"), emoji=$("profileAvatarEmoji");
@@ -405,13 +398,7 @@ $("profileBanner").addEventListener("click", e=>{
 $("bannerUploadBtn").addEventListener("click",()=>$("bannerFileInput").click());
 $("bannerFileInput").addEventListener("change",()=>{
   const f=$("bannerFileInput").files[0]; if(!f)return;
-  new FileReader().onload=e=>{
-    newBannerB64=e.target.result;
-    $("profileBanner").style.background=`url(${newBannerB64}) center/cover`;
-    $("pefBannerPreviewImg").src=newBannerB64; $("pefBannerPreview").style.display="flex";
-    $("bannerPresets").querySelectorAll(".banner-preset-btn").forEach(b=>b.classList.remove("selected"));
-    selBanner=null;
-  }; Object.assign(new FileReader(),{onload:e=>{newBannerB64=e.target.result;$("profileBanner").style.background=`url(${newBannerB64}) center/cover`;$("pefBannerPreviewImg").src=newBannerB64;$("pefBannerPreview").style.display="flex";selBanner=null;$("bannerPresets").querySelectorAll(".banner-preset-btn").forEach(b=>b.classList.remove("selected"));}}).readAsDataURL(f);
+  Object.assign(new FileReader(),{onload:e=>{newBannerB64=e.target.result;$("profileBanner").style.background=`url(${newBannerB64}) center/cover`;$("pefBannerPreviewImg").src=newBannerB64;$("pefBannerPreview").style.display="flex";selBanner=null;$("bannerPresets").querySelectorAll(".banner-preset-btn").forEach(b=>b.classList.remove("selected"));}}).readAsDataURL(f);
 });
 $("clearBannerBtn").addEventListener("click",()=>{newBannerB64=null;$("pefBannerPreview").style.display="none";$("bannerFileInput").value="";applyProfileDisplay();});
 $("bannerPickCancel").addEventListener("click",()=>{$("bannerPickPanel").style.display="none";newBannerB64=null;selBanner=null;applyProfileDisplay();});

@@ -99,6 +99,7 @@ function doLogin(){
   $("loginPage").style.display="none";
   $("appPage").style.display="flex";
   $("chipName").textContent=CU.name;
+  updateChipAvatar();
   $("pwInput").value="";
   checkActiveTimer();
   renderTimerStats();
@@ -325,6 +326,13 @@ async function delComment(cid){
 const ANIMAL_EMOJIS=['🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼','🐨','🐯','🦁','🐮','🐷','🐸','🐵','🐔','🐧','🐦','🦆','🦉','🦋','🐢','🦖','🐬','🦈','🐙'];
 const OTHER_EMOJIS=['🔬','🧮','📐','🧠','⚡','🌌','🔭','🧪','📊','🎯','🚀','💡','🏆','🎲','🌠','🔮'];
 
+function updateChipAvatar(){
+  if(!CU)return;
+  const el=$("chipAvatar");
+  if(CU.avatarImg){el.style.backgroundImage=`url(${CU.avatarImg})`;el.style.backgroundSize="cover";el.textContent="";}
+  else{el.style.backgroundImage="";el.textContent=CU.avatar||CU.initial;}
+}
+
 function applyProfileDisplay(){
   const img=$("profileAvatarImg"), emoji=$("profileAvatarEmoji");
   if(CU.avatarImg){img.src=CU.avatarImg;img.style.display="";emoji.style.display="none";}
@@ -391,7 +399,7 @@ $("profileBanner").addEventListener("click", e=>{
     });
   });
   $("pefBannerPreview").style.display="none";
-  panel.style.display="block";
+  panel.style.display="flex";
 });
 
 // 배너 업로드
@@ -431,7 +439,7 @@ $("profileAvatar").addEventListener("click",()=>{
     });
   });
   $("pefAvatarPreview").style.display="none";
-  panel.style.display="block";
+  panel.style.display="flex";
 });
 
 // 아바타 업로드
@@ -449,7 +457,7 @@ $("avatarPickSave").addEventListener("click",async()=>{
   if(Object.keys(update).length){await setDoc(doc(db,"profiles",CU.id),update,{merge:true});}
   const idx=USERS.findIndex(u=>u.id===CU.id);
   if(idx>=0){if(CU.avatarImg)USERS[idx].avatarImg=CU.avatarImg;if(CU.avatar)USERS[idx].avatar=CU.avatar;}
-  $("avatarPickPanel").style.display="none";newAvatarB64=null;selEmoji=null;applyProfileDisplay();
+  $("avatarPickPanel").style.display="none";newAvatarB64=null;selEmoji=null;applyProfileDisplay();updateChipAvatar();
 });
 
 // 소개 편집
@@ -471,7 +479,6 @@ $("bioSaveBtn").addEventListener("click",async()=>{
 // 이름/비번 편집
 $("profileNameEditBtn").addEventListener("click",()=>{
   $("pefName").value=CU.name||"";
-  $("pefBio").value=CU.bio||"";
   $("pefPw").value="";
   $("pefMsg").textContent="";
   $("profileEditForm").style.display="flex";
@@ -479,16 +486,15 @@ $("profileNameEditBtn").addEventListener("click",()=>{
 });
 $("pefCancel").addEventListener("click",()=>{$("profileEditForm").style.display="none";});
 $("pefSave").addEventListener("click",async()=>{
-  const name=$("pefName").value.trim(), pw=$("pefPw").value.trim(), bio=$("pefBio").value.trim();
+  const name=$("pefName").value.trim(), pw=$("pefPw").value.trim();
   if(!name){$("pefMsg").style.color="#f87171";$("pefMsg").textContent="이름을 입력해주세요";return;}
-  const update={name,bio}; if(pw)update.pw=pw;
+  const update={name}; if(pw)update.pw=pw;
   await setDoc(doc(db,"profiles",CU.id),update,{merge:true});
-  CU.name=name; CU.bio=bio; if(pw)CU.pw=pw;
+  CU.name=name; if(pw)CU.pw=pw;
   const idx=USERS.findIndex(u=>u.id===CU.id);
-  if(idx>=0){USERS[idx].name=name;USERS[idx].bio=bio;if(pw)USERS[idx].pw=pw;}
+  if(idx>=0){USERS[idx].name=name;if(pw)USERS[idx].pw=pw;}
   $("chipName").textContent=name; $("profileName").textContent=name;
-  if(bio){$("profileBio").textContent=bio;$("profileBio").classList.remove("empty");}
-  else{$("profileBio").textContent="소개를 작성해보세요";$("profileBio").classList.add("empty");}
+  updateChipAvatar();
   const nameEl=$(`mpName${idx}`); if(nameEl)nameEl.textContent=name;
   $("pefMsg").style.color="#10b981";$("pefMsg").textContent="저장됐습니다 ✓";
   setTimeout(()=>$("profileEditForm").style.display="none",1000);

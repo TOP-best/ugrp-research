@@ -85,7 +85,7 @@ html,body { height:100%; font-family:var(--font); background:var(--bg); color:va
   height:100vh;
   display:flex; flex-direction:column;
   align-items:center; justify-content:space-evenly;
-  padding:60px 20px;
+  padding:10vh 20px 20vh;
 }
 .login-quote { text-align:center; width:100%; padding:0 40px; }
 .login-quote blockquote {
@@ -229,7 +229,8 @@ html,body { height:100%; font-family:var(--font); background:var(--bg); color:va
 .nav-btn.active { background:rgba(255,255,255,0.09); color:#fff; box-shadow:0 1px 4px rgba(0,0,0,0.4); }
 .nav-btn i { font-size:15px; }
 .topbar-right { display:flex; align-items:center; gap:8px; }
-.user-chip { display:flex; align-items:center; gap:7px; padding:4px 11px; background:rgba(255,255,255,0.06); border-radius:20px; border:1px solid rgba(255,255,255,0.1); font-size:12px; font-weight:500; color:#fff; transition:background .15s,border-color .15s; }
+.user-chip { display:flex; align-items:center; gap:7px; padding:4px 10px 4px 4px; background:rgba(255,255,255,0.06); border-radius:20px; border:1px solid rgba(255,255,255,0.1); font-size:12px; font-weight:500; color:#fff; transition:background .15s,border-color .15s; }
+.chip-avatar { width:22px; height:22px; border-radius:50%; background:rgba(255,255,255,0.15); display:flex; align-items:center; justify-content:center; font-size:13px; flex-shrink:0; background-size:cover; background-position:center; }
 .chip-dot { width:6px; height:6px; border-radius:50%; background:var(--accent); }
 .icon-btn { width:30px; height:30px; border:1px solid rgba(255,255,255,0.1); border-radius:7px; background:none; cursor:pointer; display:flex; align-items:center; justify-content:center; color:var(--text2); font-size:15px; transition:all .15s; }
 .icon-btn:hover { color:#fff; background:rgba(255,255,255,0.08); }

@@ -312,63 +312,6 @@
   </div>
 </div>
 
-<!-- ADD MODAL -->
-<div class="overlay" id="addModal" style="display:none" onclick="if(event.target===this)this.style.display='none'">
-  <div class="modal-box" onclick="event.stopPropagation()">
-    <div class="modal-head">
-      <h3 id="addModalTitle">자료 추가</h3>
-      <button class="modal-x" id="addClose"><i class="ti ti-x"></i></button>
-    </div>
-    <div class="ff"><label>URL <span class="req">*</span></label><input type="url" id="fUrl" placeholder="https://drive.google.com/..."></div>
-    <div class="ff"><label>제목 <span class="req">*</span></label><input type="text" id="fTitle" placeholder="자료 제목"></div>
-    <div class="ff"><label>종류</label>
-      <select id="fType">
-        <option value="gdrive">구글 드라이브</option>
-        <option value="gdoc">구글 Docs</option>
-        <option value="gsheet">구글 Sheets</option>
-        <option value="gslide">구글 Slides</option>
-        <option value="notion">노션</option>
-        <option value="paper">논문 / PDF</option>
-        <option value="github">GitHub</option>
-        <option value="etc">기타</option>
-      </select>
-    </div>
-    <div class="ff"><label>메모</label><textarea id="fNote" placeholder="간단한 설명..."></textarea></div>
-    <div class="modal-foot">
-      <button class="btn-cancel" id="addCancel">취소</button>
-      <button class="btn-primary" id="addSave">추가</button>
-    </div>
-  </div>
-</div>
-
-<!-- VIEWER MODAL -->
-<div class="overlay" id="viewerModal" style="display:none" onclick="if(event.target===this)this.style.display='none'">
-  <div class="viewer-box" onclick="event.stopPropagation()">
-    <div class="viewer-head">
-      <div class="vh-left">
-        <div class="vtype-icon" id="vTypeIcon"></div>
-        <div><div class="v-title" id="vTitle"></div><div class="v-meta" id="vMeta"></div></div>
-      </div>
-      <div class="vh-actions">
-        <a id="vOpenLink" href="#" target="_blank" rel="noopener" class="v-btn"><i class="ti ti-external-link"></i> 원본</a>
-        <button id="vDeleteBtn" class="v-btn danger"><i class="ti ti-trash"></i> 삭제</button>
-        <button id="viewerClose" class="v-btn"><i class="ti ti-x"></i></button>
-      </div>
-    </div>
-    <div class="viewer-body">
-      <div class="viewer-pane" id="viewerPane"></div>
-      <div class="comments-side">
-        <div class="cs-title"><i class="ti ti-messages"></i> 코멘트</div>
-        <div class="cs-list" id="commentsList"></div>
-        <div class="cs-input">
-          <textarea id="commentInput" placeholder="코멘트 작성..."></textarea>
-          <button id="commentSend"><i class="ti ti-send"></i></button>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
 <div class="toast" id="toast"></div>
 <script type="module" src="app.js"></script>
 

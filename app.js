@@ -23,8 +23,8 @@ const BASE_USERS = [
 ];
 let USERS = BASE_USERS.map(u=>({...u}));
 
-let CU=null, pickIdx=-1, weekOff=0, addDate=null;
-let viewItem=null, timerInterval=null, timerStart=null, statPeriod="week";
+let CU=null, pickIdx=-1, statPeriod="week";
+let timerInterval=null, timerStart=null;
 let unsubFiles=null;
 let newAvatarB64=null, newBannerB64=null, selEmoji=null, selBanner=null;
 
@@ -105,7 +105,7 @@ function doLogin(){
   renderTimerStats();
   renderStats();
   subscribeFiles();
-  renderCal();
+  renderCalMonths();
 };
 
 $("logoutBtn").addEventListener("click",()=>{
@@ -225,7 +225,6 @@ async function renderStats(){
 
 // ════ CALENDAR (월별 그리드) ════
 const TYPE_ICONS={gdrive:"ti-brand-google-drive",gdoc:"ti-file-text",gsheet:"ti-table",gslide:"ti-presentation",notion:"ti-note",paper:"ti-file-description",github:"ti-brand-github",etc:"ti-link"};
-const TYPE_COLORS={gdrive:["#E6F1FB","#185FA5"],gdoc:["#E6F1FB","#185FA5"],gsheet:["#E1F5EE","#0F6E56"],gslide:["#FAEEDA","#854F0B"],notion:["#F1EFE8","#444"],paper:["#FEF3C7","#92400E"],github:["#F1EFE8","#444"],etc:["#F3E8FF","#6D28D9"]};
 
 const CAL_START={y:2026,m:0}; // 2026년 1월부터
 const CAL_END={y:2027,m:2};   // 2027년 3월까지
@@ -234,9 +233,8 @@ function subscribeFiles(){if(unsubFiles)unsubFiles();unsubFiles=onSnapshot(colle
 
 let currentDayDate=null;
 let currentDayMember=null;
-let dayFolders=[];  // {id, name, order}
-let dayFiles=[];    // {id, title, url, type, folderId, order, authorId, note}
-let dragSrcId=null;
+let dayFolders=[];
+let dayFiles=[];
 
 async function renderCalMonths(){
   if(!CU)return;
@@ -286,7 +284,8 @@ async function renderCalMonths(){
 async function openDayPage(dateStr){
   currentDayDate=dateStr;
   currentDayMember=CU.id;
-  $("dayDetailTitle").textContent=dateStr.replace(/-/g,'년 ').replace(/-/,'월 ')+'일';
+  const [y,mo,d]=dateStr.split('-');
+  $("dayDetailTitle").textContent=`${y}년 ${mo}월 ${d}일`;
   await loadDayData();
   switchTab("day");
 }
@@ -321,85 +320,192 @@ function renderDayMemberTabs(){
 function renderDayFileList(){
   const list=$("dayFileList");
   if(!dayFolders.length&&!dayFiles.length){list.innerHTML=`<div class="day-empty">자료가 없습니다</div>`;return;}
-  let html="";
-  // 폴더 없는 파일 먼저
+
+  // 루트 아이템: 폴더 없는 파일 + 폴더 전체를 order 기준 정렬
   const rootFiles=dayFiles.filter(f=>!f.folderId);
-  rootFiles.forEach(f=>{html+=fileRowHtml(f,false);});
-  // 폴더들
-  dayFolders.forEach(folder=>{
-    const folderFiles=dayFiles.filter(f=>f.folderId===folder.id);
-    html+=`<div class="day-folder" data-id="${folder.id}" draggable="true">
-      <div class="day-folder-row">
-        <i class="ti ti-folder day-folder-icon"></i>
-        <span class="day-folder-name">${esc(folder.title)}</span>
-        <span class="day-folder-count">${folderFiles.length}개</span>
-        <button class="day-folder-toggle" data-id="${folder.id}"><i class="ti ti-chevron-down"></i></button>
-      </div>
-      <div class="day-folder-children" id="fc-${folder.id}" style="display:none">
-        ${folderFiles.length?folderFiles.map(f=>fileRowHtml(f,true)).join(""):'<div class="day-empty-folder">비어있음</div>'}
-      </div>
-    </div>`;
+  const rootItems=[...rootFiles,...dayFolders].sort((a,b)=>(a.order||0)-(b.order||0));
+
+  list.innerHTML="";
+  rootItems.forEach(item=>{
+    if(item.isFolder){
+      const folderFiles=dayFiles.filter(f=>f.folderId===item.id).sort((a,b)=>(a.order||0)-(b.order||0));
+      const folderEl=document.createElement("div");
+      folderEl.className="day-folder";
+      folderEl.dataset.id=item.id;
+      folderEl.dataset.type="folder";
+      folderEl.draggable=true;
+      folderEl.innerHTML=`
+        <div class="day-folder-row">
+          <i class="ti ti-grip-vertical" style="color:rgba(255,255,255,.2);font-size:13px"></i>
+          <i class="ti ti-folder day-folder-icon"></i>
+          <span class="day-folder-name">${esc(item.title)}</span>
+          <span class="day-folder-count">${folderFiles.length}개</span>
+          <button class="day-folder-toggle" data-id="${item.id}"><i class="ti ti-chevron-down"></i></button>
+        </div>
+        <div class="day-folder-children" id="fc-${item.id}" style="display:none">
+          ${folderFiles.length?folderFiles.map(f=>fileRowInnerHtml(f,item.id)).join(''):'<div class="day-empty-folder">비어있음</div>'}
+        </div>`;
+      list.appendChild(folderEl);
+    } else {
+      const fileEl=document.createElement("div");
+      fileEl.className="day-file-row";
+      fileEl.dataset.id=item.id;
+      fileEl.dataset.type="file";
+      fileEl.dataset.url=item.url||"";
+      fileEl.dataset.folderId="";
+      fileEl.draggable=true;
+      fileEl.innerHTML=fileRowInner(item);
+      list.appendChild(fileEl);
+    }
   });
-  list.innerHTML=html;
 
   // 폴더 토글
   list.querySelectorAll(".day-folder-toggle").forEach(btn=>{
-    btn.addEventListener("click",()=>{
+    btn.addEventListener("click",e=>{
+      e.stopPropagation();
       const ch=$(`fc-${btn.dataset.id}`);
       const open=ch.style.display!=="none";
-      ch.style.display=open?"none":"block";
+      ch.style.display=open?"none":"flex";
+      ch.style.flexDirection="column";
+      ch.style.gap="4px";
       btn.querySelector("i").className=`ti ${open?"ti-chevron-down":"ti-chevron-up"}`;
     });
   });
-  // 파일 클릭
-  list.querySelectorAll(".day-file-row[data-url]").forEach(row=>{
-    row.addEventListener("click",e=>{if(!e.target.closest(".day-file-del"))window.open(row.dataset.url,"_blank");});
+
+  // 파일 클릭 (루트)
+  list.querySelectorAll(".day-file-row .day-file-name[data-url]").forEach(el=>{
+    el.addEventListener("click",()=>window.open(el.dataset.url,"_blank"));
   });
+  // 파일 클릭 (폴더 안)
+  list.querySelectorAll(".day-file-inner .day-file-name[data-url]").forEach(el=>{
+    el.addEventListener("click",()=>window.open(el.dataset.url,"_blank"));
+  });
+
   // 삭제
   list.querySelectorAll(".day-file-del").forEach(btn=>{
-    btn.addEventListener("click",async()=>{
+    btn.addEventListener("click",async e=>{
+      e.stopPropagation();
       if(!confirm("삭제할까요?"))return;
       await deleteDoc(doc(db,"fileItems",btn.dataset.id));
       showToast("삭제됐습니다");loadDayData();
     });
   });
-  // 드래그앤드롭
+
   setupDragDrop(list);
 }
 
-function fileRowHtml(f,inFolder){
+function fileRowInner(f){
   const icon=TYPE_ICONS[f.type]||"ti-link";
   const canDel=CU&&f.authorId===CU.id;
-  return`<div class="day-file-row${inFolder?' indent':''}" data-id="${f.id}" data-url="${esc(f.url)}" draggable="true">
+  return`<i class="ti ti-grip-vertical" style="color:rgba(255,255,255,.2);font-size:13px;flex-shrink:0"></i>
     <i class="ti ${icon} day-file-icon"></i>
-    <span class="day-file-name">${esc(f.title)}</span>
+    <span class="day-file-name" data-url="${esc(f.url||'')}">${esc(f.title)}</span>
+    ${f.note?`<span class="day-file-note">${esc(f.note)}</span>`:''}
+    ${canDel?`<button class="day-file-del" data-id="${f.id}"><i class="ti ti-trash"></i></button>`:''}`;
+}
+
+function fileRowInnerHtml(f,folderId){
+  const icon=TYPE_ICONS[f.type]||"ti-link";
+  const canDel=CU&&f.authorId===CU.id;
+  return`<div class="day-file-row day-file-inner" data-id="${f.id}" data-type="file" data-folder-id="${folderId}" draggable="true">
+    <i class="ti ti-grip-vertical" style="color:rgba(255,255,255,.2);font-size:13px;flex-shrink:0"></i>
+    <i class="ti ${icon} day-file-icon"></i>
+    <span class="day-file-name" data-url="${esc(f.url||'')}">${esc(f.title)}</span>
     ${f.note?`<span class="day-file-note">${esc(f.note)}</span>`:''}
     ${canDel?`<button class="day-file-del" data-id="${f.id}"><i class="ti ti-trash"></i></button>`:''}
   </div>`;
 }
 
 function setupDragDrop(list){
-  const rows=[...list.querySelectorAll("[draggable='true']")];
-  rows.forEach(row=>{
-    row.addEventListener("dragstart",e=>{dragSrcId=row.dataset.id;row.classList.add("dragging");e.dataTransfer.effectAllowed="move";});
-    row.addEventListener("dragend",()=>{row.classList.remove("dragging");list.querySelectorAll(".drag-over").forEach(el=>el.classList.remove("drag-over"));});
-    row.addEventListener("dragover",e=>{e.preventDefault();row.classList.add("drag-over");});
-    row.addEventListener("dragleave",()=>row.classList.remove("drag-over"));
-    row.addEventListener("drop",async e=>{
-      e.preventDefault();row.classList.remove("drag-over");
-      if(!dragSrcId||dragSrcId===row.dataset.id)return;
-      // 순서 재정렬: allItems에서 src를 target 위치로 이동
-      const allItems=[...dayFolders,...dayFiles];
-      const srcIdx=allItems.findIndex(x=>x.id===dragSrcId);
-      const tgtIdx=allItems.findIndex(x=>x.id===row.dataset.id);
-      if(srcIdx<0||tgtIdx<0)return;
-      const moved=allItems.splice(srcIdx,1)[0];
-      allItems.splice(tgtIdx,0,moved);
-      // 순서 일괄 업데이트
-      await Promise.all(allItems.map((it,i)=>updateDoc(doc(db,"fileItems",it.id),{order:i})));
+  let dragId=null, dragType=null, dragFromFolder=null;
+
+  function getDraggables(){
+    return [...list.querySelectorAll("[draggable='true']")];
+  }
+
+  function attachDrag(el){
+    el.addEventListener("dragstart",e=>{
+      dragId=el.dataset.id;
+      dragType=el.dataset.type;
+      dragFromFolder=el.dataset.folderId||null;
+      e.dataTransfer.effectAllowed="move";
+      setTimeout(()=>el.classList.add("dragging"),0);
+    });
+    el.addEventListener("dragend",()=>{
+      el.classList.remove("dragging");
+      list.querySelectorAll(".drag-over-item,.drag-over-folder").forEach(x=>{x.classList.remove("drag-over-item","drag-over-folder");});
+    });
+    el.addEventListener("dragover",e=>{
+      e.preventDefault();
+      if(el.dataset.id===dragId)return;
+      // 폴더 위에 파일을 드래그하면 폴더 표시
+      if(el.dataset.type==="folder"&&dragType==="file"){el.classList.add("drag-over-folder");}
+      else{el.classList.add("drag-over-item");}
+    });
+    el.addEventListener("dragleave",()=>{el.classList.remove("drag-over-item","drag-over-folder");});
+    el.addEventListener("drop",async e=>{
+      e.preventDefault();e.stopPropagation();
+      el.classList.remove("drag-over-item","drag-over-folder");
+      if(!dragId||el.dataset.id===dragId)return;
+
+      const tgtId=el.dataset.id, tgtType=el.dataset.type, tgtFolder=el.dataset.folderId||null;
+
+      // 파일을 폴더 위에 드롭 → 그 폴더 안으로 이동
+      if(tgtType==="folder"&&dragType==="file"){
+        await updateDoc(doc(db,"fileItems",dragId),{folderId:tgtId});
+        showToast("폴더로 이동됐습니다");loadDayData();return;
+      }
+
+      // 같은 컨텍스트(둘 다 루트 or 둘 다 같은 폴더) → 순서 변경
+      const srcInFolder=dragFromFolder;
+      const tgtInFolder=tgtFolder;
+
+      if(srcInFolder===tgtInFolder){
+        // 같은 레벨 순서 변경
+        let pool;
+        if(!srcInFolder){
+          // 루트: 파일+폴더 섞어서
+          const rootFiles=dayFiles.filter(f=>!f.folderId);
+          pool=[...rootFiles,...dayFolders].sort((a,b)=>(a.order||0)-(b.order||0));
+        } else {
+          pool=dayFiles.filter(f=>f.folderId===srcInFolder).sort((a,b)=>(a.order||0)-(b.order||0));
+        }
+        const srcIdx=pool.findIndex(x=>x.id===dragId);
+        const tgtIdx=pool.findIndex(x=>x.id===tgtId);
+        if(srcIdx<0||tgtIdx<0)return;
+        const moved=pool.splice(srcIdx,1)[0];
+        pool.splice(tgtIdx,0,moved);
+        await Promise.all(pool.map((it,i)=>updateDoc(doc(db,"fileItems",it.id),{order:i})));
+      } else {
+        // 다른 레벨: 폴더 안→밖으로 이동 (folderId 제거) 또는 반대
+        if(srcInFolder&&!tgtInFolder){
+          // 폴더 안 파일 → 루트로
+          await updateDoc(doc(db,"fileItems",dragId),{folderId:null});
+          showToast("루트로 이동됐습니다");
+        } else if(!srcInFolder&&tgtInFolder){
+          // 루트 파일 → 폴더 안으로
+          await updateDoc(doc(db,"fileItems",dragId),{folderId:tgtInFolder});
+          showToast("폴더로 이동됐습니다");
+        }
+      }
       loadDayData();
     });
+  }
+
+  // 폴더 children 영역 드롭 존 (빈 폴더에도 드롭 가능)
+  list.querySelectorAll(".day-folder-children").forEach(ch=>{
+    ch.addEventListener("dragover",e=>e.preventDefault());
+    ch.addEventListener("drop",async e=>{
+      e.preventDefault();e.stopPropagation();
+      if(!dragId||dragType!=="file")return;
+      const folderId=ch.id.replace("fc-","");
+      if(dragFromFolder===folderId)return;
+      await updateDoc(doc(db,"fileItems",dragId),{folderId});
+      showToast("폴더로 이동됐습니다");loadDayData();
+    });
   });
+
+  getDraggables().forEach(attachDrag);
 }
 
 function renderFolderSelect(){
@@ -442,7 +548,7 @@ $("dfSave").addEventListener("click",async()=>{
   });
   $("dfUrl").value="";$("dfTitle").value="";$("dfNote").value="";$("dfFolder").value="";
   $("dfSave").disabled=false;
-  showToast("자료가 추가됐습니다 🔗");loadDayData();currentDayMember=CU.id;
+  showToast("자료가 추가됐습니다 🔗");loadDayData();
 });
 
 

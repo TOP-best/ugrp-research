@@ -180,31 +180,47 @@
       <div class="profile-stats" id="profileStats"></div>
       <div class="profile-recent" id="profileRecent"></div>
 
+      <!-- 아바타 선택 패널 -->
+      <div class="avatar-pick-panel" id="avatarPickPanel" style="display:none">
+        <div class="app-title">프로필 사진 변경</div>
+        <div class="app-section-label">동물</div>
+        <div class="emoji-grid" id="animalEmojiGrid"></div>
+        <div class="app-section-label" style="margin-top:12px">기타</div>
+        <div class="emoji-grid" id="otherEmojiGrid"></div>
+        <div class="app-section-label" style="margin-top:12px">사진 업로드</div>
+        <button class="pef-upload-btn" id="avatarUploadBtn"><i class="ti ti-upload"></i> 사진 업로드 (JPG, PNG)</button>
+        <div class="pef-preview-wrap" id="pefAvatarPreview" style="display:none">
+          <img class="pef-preview-img" id="pefAvatarPreviewImg">
+          <span style="font-size:13px;color:rgba(255,255,255,.5)">새 프로필 사진</span>
+          <button class="pef-preview-clear" id="clearAvatarBtn"><i class="ti ti-x"></i></button>
+        </div>
+        <div class="app-btns">
+          <button class="app-cancel" id="avatarPickCancel">취소</button>
+          <button class="app-save" id="avatarPickSave">저장</button>
+        </div>
+      </div>
+
+      <!-- 배너 선택 패널 -->
+      <div class="avatar-pick-panel" id="bannerPickPanel" style="display:none">
+        <div class="app-title">배경 변경</div>
+        <div class="app-section-label">프리셋</div>
+        <div class="banner-presets" id="bannerPresets"></div>
+        <div class="app-section-label" style="margin-top:12px">사진 업로드</div>
+        <button class="pef-upload-btn" id="bannerUploadBtn"><i class="ti ti-photo"></i> 배경 사진 업로드</button>
+        <div class="pef-preview-wrap" id="pefBannerPreview" style="display:none">
+          <img class="pef-preview-img" id="pefBannerPreviewImg" style="border-radius:8px;width:80px;height:40px;object-fit:cover;">
+          <span style="font-size:13px;color:rgba(255,255,255,.5)">새 배경 사진</span>
+          <button class="pef-preview-clear" id="clearBannerBtn"><i class="ti ti-x"></i></button>
+        </div>
+        <div class="app-btns">
+          <button class="app-cancel" id="bannerPickCancel">취소</button>
+          <button class="app-save" id="bannerPickSave">저장</button>
+        </div>
+      </div>
+
       <!-- 편집 폼 -->
       <div class="profile-edit-form" id="profileEditForm" style="display:none">
         <div class="pef-section-title">프로필 편집</div>
-        <div class="pef-row">
-          <div class="pef-label">프로필 사진</div>
-          <button class="pef-upload-btn" onclick="document.getElementById('avatarFileInput').click()">
-            <i class="ti ti-upload"></i> 사진 업로드 (JPG, PNG)
-          </button>
-          <div class="pef-preview-wrap" id="pefAvatarPreview" style="display:none">
-            <img class="pef-preview-img" id="pefAvatarPreviewImg">
-            <span style="font-size:13px;color:rgba(255,255,255,.5)">새 프로필 사진</span>
-            <button class="pef-preview-clear" onclick="clearAvatarPreview()"><i class="ti ti-x"></i></button>
-          </div>
-        </div>
-        <div class="pef-row">
-          <div class="pef-label">배경 사진</div>
-          <button class="pef-upload-btn" onclick="document.getElementById('bannerFileInput').click()">
-            <i class="ti ti-photo"></i> 배경 사진 업로드
-          </button>
-          <div class="pef-preview-wrap" id="pefBannerPreview" style="display:none">
-            <img class="pef-preview-img" id="pefBannerPreviewImg" style="border-radius:8px;width:80px;height:40px;object-fit:cover;">
-            <span style="font-size:13px;color:rgba(255,255,255,.5)">새 배경 사진</span>
-            <button class="pef-preview-clear" onclick="clearBannerPreview()"><i class="ti ti-x"></i></button>
-          </div>
-        </div>
         <div class="pef-row"><div class="pef-label">이름</div><input type="text" class="pef-input" id="pefName"></div>
         <div class="pef-row"><div class="pef-label">소개</div><input type="text" class="pef-input" id="pefBio" placeholder="한 줄 소개"></div>
         <div class="pef-row"><div class="pef-label">비밀번호</div><input type="password" class="pef-input" id="pefPw" placeholder="변경할 비밀번호 (비워두면 유지)"></div>

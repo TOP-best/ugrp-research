@@ -1,57 +1,3 @@
-
-/* LOGIN HERO */
-#bgCanvas { position:fixed; inset:0; z-index:0; }
-.login-center {
-  position:relative; z-index:1;
-  display:flex; flex-direction:column; align-items:center; justify-content:center;
-  height:100vh; padding:40px 20px; gap:60px;
-}
-.login-quote { text-align:center; width:100%; padding:0 40px; }
-.login-quote blockquote {
-  font-family:'Inter',sans-serif;
-  font-size:clamp(28px,4.8vw,68px);
-  font-weight:800; font-style:italic;
-  color:#fff; letter-spacing:-2px; line-height:1.1;
-  white-space:nowrap;
-}
-.login-hero {
-  display:flex; flex-direction:column; align-items:center; gap:28px;
-}
-.hero-logo img {
-  width:110px; height:110px; object-fit:contain;
-  filter:drop-shadow(0 0 30px rgba(255,255,255,0.1));
-}
-.hero-text { text-align:center; }
-.hero-text h1 {
-  font-family:'Inter',sans-serif;
-  font-size:42px; font-weight:900; color:#fff;
-  letter-spacing:-2px; line-height:1;
-}
-.hero-text p {
-  font-size:14px; color:rgba(255,255,255,0.35);
-  margin-top:6px; letter-spacing:2px; text-transform:uppercase;
-}
-.login-btn {
-  display:flex; align-items:center; justify-content:center;
-  padding:10px 32px;
-  background:rgba(255,255,255,0.05);
-  border:1px solid rgba(255,255,255,0.15);
-  border-radius:4px;
-  color:rgba(255,255,255,0.75); font-family:'Inter',sans-serif;
-  font-size:12px; font-weight:600; letter-spacing:4px;
-  cursor:pointer; transition:all 0.22s ease;
-  text-transform:uppercase;
-}
-.login-btn:hover {
-  background:rgba(255,255,255,0.1);
-  border-color:rgba(255,255,255,0.35);
-  color:#fff;
-  transform:translateY(-1px);
-  box-shadow:0 8px 30px rgba(0,0,0,0.4);
-}
-.login-btn:active { transform:translateY(0); }
-.login-btn-arrow { display:none; }
-
 /* MEMBER OVERLAY */
 .member-overlay {
   position:fixed; inset:0; z-index:100;
@@ -82,7 +28,6 @@
   100% { opacity:1; transform:scale(1) translateY(0); filter:blur(0px); }
 }
 /* 멤버 버튼 */
-.mp-member { opacity:1; pointer-events:auto; }
 .mp-header {
   display:flex; align-items:center; justify-content:space-between;
   margin-bottom:20px;
@@ -116,17 +61,6 @@
 .mp-role { display:block; font-size:11px; color:rgba(255,255,255,0.35); margin-top:1px; }
 .mp-chevron { font-size:14px; color:rgba(255,255,255,0.25); transition:all .18s; }
 .mp-member:hover .mp-chevron { color:rgba(255,255,255,0.7); transform:translateX(2px); }
-
-/* PW inside panel */
-.pw-back { display:flex; align-items:center; gap:6px; background:none; border:none; color:rgba(255,255,255,0.4); font-size:12px; cursor:pointer; margin-bottom:14px; padding:3px 0; transition:color .15s; }
-.pw-back:hover { color:#fff; }
-.pw-row { display:flex; gap:8px; }
-.pw-input { flex:1; padding:12px 14px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1); border-radius:6px; color:white; font-size:14px; transition:border-color .15s; font-family:'Inter',sans-serif; }
-.pw-input::placeholder { color:rgba(255,255,255,0.22); }
-.pw-input:focus { outline:none; border-color:rgba(255,255,255,0.3); }
-.pw-btn { padding:12px 18px; background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.15); border-radius:6px; color:white; font-size:16px; font-weight:700; cursor:pointer; transition:all .15s; }
-.pw-btn:hover { background:rgba(255,255,255,0.2); }
-.pw-err { font-size:12px; color:#f87171; margin-top:8px; min-height:16px; }
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
   --accent:#1D9E75; --accent-dark:#0F6E56; --accent-light:rgba(29,158,117,0.12);
@@ -264,7 +198,7 @@ html,body { height:100%; font-family:var(--font); background:var(--bg); color:va
 .nav-btn.active { background:rgba(255,255,255,0.09); color:#fff; box-shadow:0 1px 4px rgba(0,0,0,0.4); }
 .nav-btn i { font-size:15px; }
 .topbar-right { display:flex; align-items:center; gap:8px; }
-.user-chip { display:flex; align-items:center; gap:7px; padding:4px 11px; background:rgba(255,255,255,0.06); border-radius:20px; border:1px solid rgba(255,255,255,0.1); font-size:12px; font-weight:500; color:#fff; }
+.user-chip { display:flex; align-items:center; gap:7px; padding:4px 11px; background:rgba(255,255,255,0.06); border-radius:20px; border:1px solid rgba(255,255,255,0.1); font-size:12px; font-weight:500; color:#fff; transition:background .15s,border-color .15s; }
 .chip-dot { width:6px; height:6px; border-radius:50%; background:var(--accent); }
 .icon-btn { width:30px; height:30px; border:1px solid rgba(255,255,255,0.1); border-radius:7px; background:none; cursor:pointer; display:flex; align-items:center; justify-content:center; color:var(--text2); font-size:15px; transition:all .15s; }
 .icon-btn:hover { color:#fff; background:rgba(255,255,255,0.08); }
@@ -429,7 +363,6 @@ html,body { height:100%; font-family:var(--font); background:var(--bg); color:va
 
 
 /* ── USER CHIP ── */
-.user-chip { transition:background .15s,border-color .15s; }
 .user-chip:hover { background:rgba(255,255,255,0.1); border-color:rgba(255,255,255,0.2); }
 
 /* ── PROFILE PAGE ── */
@@ -439,6 +372,7 @@ html,body { height:100%; font-family:var(--font); background:var(--bg); color:va
   background:linear-gradient(135deg,#1a1a2e,#16213e,#0f3460);
   background-size:cover; background-position:center;
   display:flex; align-items:flex-end;
+  cursor:pointer;
 }
 .profile-back-btn {
   position:absolute; top:14px; left:14px;
@@ -483,12 +417,6 @@ html,body { height:100%; font-family:var(--font); background:var(--bg); color:va
 .profile-avatar:hover .profile-avatar-overlay { opacity:1; }
 .profile-name { font-size:24px; font-weight:800; color:#fff; letter-spacing:-.8px; line-height:1; margin-bottom:4px; }
 .profile-role { font-size:12px; color:rgba(255,255,255,.4); letter-spacing:.3px; }
-.profile-bio {
-  font-size:14px; color:rgba(255,255,255,.5); line-height:1.6;
-  margin-bottom:20px; min-height:22px; padding-bottom:20px;
-  border-bottom:1px solid rgba(255,255,255,0.07);
-}
-.profile-bio.empty { color:rgba(255,255,255,.2); font-style:italic; }
 .profile-stats {
   display:grid; grid-template-columns:repeat(3,1fr);
   gap:10px; margin-bottom:24px;
@@ -541,7 +469,6 @@ html,body { height:100%; font-family:var(--font); background:var(--bg); color:va
 .pef-msg { font-size:12px; color:#10b981; text-align:center; margin-top:10px; min-height:16px; }
 
 /* ── 배너 편집 오버레이 ── */
-.profile-banner { cursor:pointer; }
 .banner-edit-overlay {
   position:absolute; inset:0; border-radius:12px 12px 0 0;
   background:rgba(0,0,0,0.5);

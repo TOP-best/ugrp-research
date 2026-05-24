@@ -346,6 +346,10 @@ function openProfile(){
   $("profileRole").textContent=CU.role||"Researcher";
   if(CU.bio){$("profileBio").textContent=CU.bio;$("profileBio").classList.remove("empty");}
   else{$("profileBio").textContent="소개를 작성해보세요";$("profileBio").classList.add("empty");}
+  $("pefName").value=CU.name||"";
+  $("pefBio").value=CU.bio||"";
+  $("pefPw").value="";
+  $("pefMsg").textContent="";
   renderProfileStats();
   switchTab("profile");
 }
@@ -471,14 +475,16 @@ $("bioSaveBtn").addEventListener("click",async()=>{
 // 이름/비번 편집
 $("profileEditForm") && [$("pefCancel"),$("pefSave")].forEach(el=>el&&el.addEventListener("click", async(e)=>{
   if(e.target.id==="pefCancel"){$("profileEditForm").style.display="none";return;}
-  const name=$("pefName").value.trim(), pw=$("pefPw").value.trim();
+  const name=$("pefName").value.trim(), pw=$("pefPw").value.trim(), bio=$("pefBio").value.trim();
   if(!name){$("pefMsg").style.color="#f87171";$("pefMsg").textContent="이름을 입력해주세요";return;}
-  const update={name}; if(pw)update.pw=pw;
+  const update={name,bio}; if(pw)update.pw=pw;
   await setDoc(doc(db,"profiles",CU.id),update,{merge:true});
-  CU.name=name; if(pw)CU.pw=pw;
+  CU.name=name; CU.bio=bio; if(pw)CU.pw=pw;
   const idx=USERS.findIndex(u=>u.id===CU.id);
-  if(idx>=0){USERS[idx].name=name;if(pw)USERS[idx].pw=pw;}
+  if(idx>=0){USERS[idx].name=name;USERS[idx].bio=bio;if(pw)USERS[idx].pw=pw;}
   $("chipName").textContent=name; $("profileName").textContent=name;
+  if(bio){$("profileBio").textContent=bio;$("profileBio").classList.remove("empty");}
+  else{$("profileBio").textContent="소개를 작성해보세요";$("profileBio").classList.add("empty");}
   const nameEl=$(`mpName${idx}`); if(nameEl)nameEl.textContent=name;
   $("pefMsg").style.color="#10b981";$("pefMsg").textContent="저장됐습니다 ✓";
   setTimeout(()=>$("profileEditForm").style.display="none",1000);

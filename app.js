@@ -335,7 +335,7 @@ function renderDayFileList(){
       folderEl.className="day-folder";
       folderEl.dataset.id=item.id;
       folderEl.dataset.type="folder";
-      folderEl.draggable=false; // grip에서만 true로
+      folderEl.draggable=true;
 
       const rowEl=document.createElement("div");
       rowEl.className="day-folder-row";
@@ -474,14 +474,8 @@ function setupDragDrop(list){
 
   // 파일 row: grip에서만 드래그 허용 (클릭 시 어두워짐 방지)
   list.querySelectorAll(".day-file-row").forEach(el=>{
-    let gripDown=false;
-    const grip=el.querySelector(".drag-handle");
-    if(grip){
-      grip.addEventListener("mousedown",()=>{ gripDown=true; el.draggable=true; });
-      grip.addEventListener("mouseup",()=>{ el.draggable=false; });
-    }
+    el.draggable=true;
     el.addEventListener("dragstart",e=>{
-      if(!gripDown){ e.preventDefault(); return; }
       dragId=el.dataset.id;
       dragType=el.dataset.type;
       dragFromFolder=el.dataset.folderId||null;
@@ -490,7 +484,6 @@ function setupDragDrop(list){
       if(dragFromFolder) rootZone.style.display="flex";
     });
     el.addEventListener("dragend",()=>{
-      gripDown=false;
       el.classList.remove("dragging");
       clearHL();
       rootZone.style.display="none";
@@ -535,14 +528,8 @@ function setupDragDrop(list){
 
   // 폴더: grip에서만 드래그, 폴더끼리 순서 변경
   list.querySelectorAll(".day-folder").forEach(el=>{
-    let gripDown=false;
-    const grip=el.querySelector(".drag-handle");
-    if(grip){
-      grip.addEventListener("mousedown",()=>{ gripDown=true; el.draggable=true; });
-      grip.addEventListener("mouseup",()=>{ el.draggable=false; });
-    }
+    el.draggable=true;
     el.addEventListener("dragstart",e=>{
-      if(!gripDown){ e.preventDefault(); return; }
       dragId=el.dataset.id;
       dragType="folder";
       dragFromFolder=null;
@@ -550,7 +537,6 @@ function setupDragDrop(list){
       setTimeout(()=>el.classList.add("dragging"),0);
     });
     el.addEventListener("dragend",()=>{
-      gripDown=false;
       el.classList.remove("dragging");
       clearHL();
       dragId=null;dragType=null;dragFromFolder=null;

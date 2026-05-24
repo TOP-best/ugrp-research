@@ -412,7 +412,7 @@ html,body { height:100%; font-family:var(--font); background:var(--bg); color:va
 .day-file-list { display:flex; flex-direction:column; gap:4px; }
 .day-empty { font-size:13px; color:rgba(255,255,255,.2); padding:20px 0; text-align:center; }
 .day-folder { border-radius:8px; overflow:visible; border:1px solid rgba(255,255,255,0.07); }
-.day-folder-row { display:flex; align-items:center; gap:10px; padding:10px 14px; background:rgba(255,255,255,0.05); border-radius:8px 8px 0 0; cursor:grab; }
+.day-folder-row { display:flex; align-items:center; gap:10px; padding:10px 14px; background:rgba(255,255,255,0.05); border-radius:8px 8px 0 0; cursor:default; user-select:none; }
 .day-folder-icon { color:rgba(255,255,255,.5); font-size:16px; }
 .day-folder-name { flex:1; font-size:13px; font-weight:600; color:#fff; }
 .day-folder-count { font-size:11px; color:rgba(255,255,255,.3); }
@@ -421,7 +421,7 @@ html,body { height:100%; font-family:var(--font); background:var(--bg); color:va
 .day-folder-del:hover { color:#f87171; }
 .day-folder-children { padding:4px 6px 6px; background:rgba(0,0,0,0.2); border-radius:0 0 8px 8px; display:flex; flex-direction:column; gap:4px; }
 .day-empty-folder { font-size:12px; color:rgba(255,255,255,.2); padding:8px 6px; }
-.day-file-row { display:flex; align-items:center; gap:10px; padding:10px 14px; border-radius:8px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.05); cursor:grab; transition:all .15s; }
+.day-file-row { display:flex; align-items:center; gap:10px; padding:10px 14px; border-radius:8px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.05); cursor:default; transition:all .15s; user-select:none; }
 .day-file-row:hover { background:rgba(255,255,255,0.07); border-color:rgba(255,255,255,0.12); }
 .day-file-icon { color:rgba(255,255,255,.4); font-size:15px; flex-shrink:0; }
 .day-file-name { flex:1; font-size:13px; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; cursor:pointer; }

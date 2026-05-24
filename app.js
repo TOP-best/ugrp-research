@@ -238,6 +238,7 @@ let currentDayDate=null;
 let currentDayMember=null;
 let dayFolders=[];
 let dayFiles=[];
+let openFolderIds=new Set();
 
 async function renderCalMonths(){
   if(!CU)return;
@@ -353,29 +354,34 @@ function renderDayFileList(){
   rootItems.forEach(item=>{
     if(item.isFolder){
       const folderFiles=folderFilesSorted(item.id);
+      const isOpen=openFolderIds.has(item.id);
       const folderEl=document.createElement("div");
       folderEl.className="day-folder";
       folderEl.dataset.id=item.id;
       folderEl.dataset.type="folder";
       folderEl.dataset.folderId="";
-      folderEl.draggable=editable;
 
       const rowEl=document.createElement("div");
       rowEl.className="day-folder-row";
+      rowEl.dataset.id=item.id;
+      rowEl.dataset.type="folder";
+      rowEl.dataset.folderId="";
+      rowEl.draggable=editable;
       rowEl.innerHTML=`
         <i class="ti ti-grip-vertical drag-handle" style="color:rgba(255,255,255,.2);font-size:13px;cursor:${editable?'grab':'default'}"></i>
         <i class="ti ti-folder day-folder-icon"></i>
         <span class="day-folder-name">${esc(item.title)}</span>
         <span class="day-folder-count">${folderFiles.length}개</span>
         ${editable?`<button class="day-folder-del" data-id="${item.id}" title="폴더 삭제"><i class="ti ti-trash"></i></button>`:''}
-        <button class="day-folder-toggle" data-id="${item.id}"><i class="ti ti-chevron-down"></i></button>`;
+        <button class="day-folder-toggle" data-id="${item.id}"><i class="ti ${isOpen?'ti-chevron-up':'ti-chevron-down'}"></i></button>`;
       folderEl.appendChild(rowEl);
 
       const childrenEl=document.createElement("div");
       childrenEl.className="day-folder-children";
       childrenEl.id=`fc-${item.id}`;
       childrenEl.dataset.folderId=item.id;
-      childrenEl.style.display="none";
+      childrenEl.style.display=isOpen?"flex":"none";
+      if(isOpen){childrenEl.style.flexDirection="column";childrenEl.style.gap="4px";}
 
       if(folderFiles.length){
         folderFiles.forEach(f=>childrenEl.appendChild(makeFileEl(f,item.id,editable)));
@@ -394,8 +400,15 @@ function renderDayFileList(){
       e.stopPropagation();
       const ch=$(`fc-${btn.dataset.id}`);
       const open=ch.style.display!=="none";
-      ch.style.display=open?"none":"flex";
-      if(!open){ch.style.flexDirection="column";ch.style.gap="4px";}
+      if(open){
+        openFolderIds.delete(btn.dataset.id);
+        ch.style.display="none";
+      }else{
+        openFolderIds.add(btn.dataset.id);
+        ch.style.display="flex";
+        ch.style.flexDirection="column";
+        ch.style.gap="4px";
+      }
       btn.querySelector("i").className=`ti ${open?"ti-chevron-down":"ti-chevron-up"}`;
     });
   });
@@ -409,6 +422,7 @@ function renderDayFileList(){
       const base=maxOrder(rootItemsSorted())+1;
       await Promise.all(folderFiles.map((f,i)=>updateDoc(doc(db,"fileItems",f.id),{folderId:null,order:base+i})));
       await deleteDoc(doc(db,"fileItems",folderId));
+      openFolderIds.delete(folderId);
       showToast("폴더가 삭제됐습니다");loadDayData();
     });
   });
@@ -449,48 +463,47 @@ function makeFileEl(f, folderId, editable=canEditCurrentDay()){
 }
 
 function setupDragDrop(list){
-  let dragId=null, dragType=null, dragFromFolder=null;
+  let dragId=null, dragType=null, dragFromFolder=null, dragSourceEl=null;
   const editable=canEditCurrentDay();
   if(!editable)return;
 
+  const ignoreDragSelector="button,.day-folder-toggle,.day-folder-del,.day-file-del";
+
   function clearHL(){
-    list.querySelectorAll(".drag-over-item,.drag-over-folder,.drop-before,.drop-after").forEach(x=>{
-      x.classList.remove("drag-over-item","drag-over-folder","drop-before","drop-after");
+    list.classList.remove("drag-over-folder","drop-root-empty");
+    list.querySelectorAll(".drag-over-item,.drag-over-folder,.drop-before,.drop-after,.drop-inside").forEach(x=>{
+      x.classList.remove("drag-over-item","drag-over-folder","drop-before","drop-after","drop-inside");
       delete x.dataset.dropPos;
     });
   }
 
-  function setDragData(el,e){
-    if(el.dataset.type==="folder" && !e.target.closest(".day-folder-row")){e.preventDefault();return false;}
-    if(e.target.closest("button,.day-folder-toggle,.day-folder-del,.day-file-del")){e.preventDefault();return false;}
+  function startDragFrom(el,e){
+    if(e.target.closest(ignoreDragSelector)){e.preventDefault();return false;}
     dragId=el.dataset.id;
     dragType=el.dataset.type;
     dragFromFolder=el.dataset.folderId||null;
+    dragSourceEl=el;
     e.dataTransfer.effectAllowed="move";
     e.dataTransfer.setData("text/plain",dragId);
     setTimeout(()=>el.classList.add("dragging"),0);
     return true;
   }
 
-  function finishDrag(el){
-    el.classList.remove("dragging");
+  function finishDrag(){
+    if(dragSourceEl)dragSourceEl.classList.remove("dragging");
     clearHL();
-    dragId=null;dragType=null;dragFromFolder=null;
+    dragId=null;dragType=null;dragFromFolder=null;dragSourceEl=null;
   }
 
   function posByMouse(el,e,allowInside=false){
     const r=el.getBoundingClientRect();
     const y=e.clientY-r.top;
     if(allowInside){
-      if(y<r.height*.25)return "before";
-      if(y>r.height*.75)return "after";
+      if(y<r.height*.35)return "before";
+      if(y>r.height*.65)return "after";
       return "inside";
     }
     return y>r.height/2 ? "after" : "before";
-  }
-
-  async function rewriteRootOrder(pool){
-    await Promise.all(pool.map((it,i)=>updateDoc(doc(db,"fileItems",it.id),{order:i})));
   }
 
   async function rewriteFolderOrder(folderId,pool){
@@ -510,10 +523,17 @@ function setupDragDrop(list){
     return pool;
   }
 
-  async function dropToRoot(targetId,pos){
+  async function dropToRoot(targetId=null,pos="after"){
     if(dragType==="folder" && dragFromFolder)return;
     let pool=rootItemsSorted();
-    const next=insertAt(pool,dragId,targetId,pos);
+    let next;
+    if(targetId) next=insertAt(pool,dragId,targetId,pos);
+    else{
+      const moved=dragType==="file"?dayFiles.find(f=>f.id===dragId):dayFolders.find(f=>f.id===dragId);
+      if(!moved)return;
+      next=pool.filter(it=>it.id!==dragId);
+      next.push(moved);
+    }
     if(!next)return;
     const updates=next.map((it,i)=>{
       const data={order:i};
@@ -527,34 +547,33 @@ function setupDragDrop(list){
     if(dragType!=="file")return;
     let pool=folderFilesSorted(folderId);
     let next;
-    if(targetId)next=insertAt(pool,dragId,targetId,pos);
+    if(targetId) next=insertAt(pool,dragId,targetId,pos);
     else{
       const moved=dayFiles.find(f=>f.id===dragId);
       if(!moved)return;
-      pool=pool.filter(f=>f.id!==dragId);
-      pool.push(moved);
-      next=pool;
+      next=pool.filter(f=>f.id!==dragId);
+      next.push(moved);
     }
     await rewriteFolderOrder(folderId,next);
+    openFolderIds.add(folderId);
   }
 
-  function attachDraggable(el){
-    el.addEventListener("dragstart",e=>{
-      e.stopPropagation();
-      if(!setDragData(el,e))return;
-    });
-    el.addEventListener("dragend",e=>{e.stopPropagation();finishDrag(el);});
+  function markLine(el,pos){
+    el.dataset.dropPos=pos;
+    el.classList.add(pos==="after"?"drop-after":"drop-before");
   }
 
-  list.querySelectorAll(".day-file-row,.day-folder").forEach(attachDraggable);
-
+  // 파일은 행 전체가 드래그 대상
   list.querySelectorAll(".day-file-row").forEach(el=>{
+    el.addEventListener("dragstart",e=>{e.stopPropagation();startDragFrom(el,e);});
+    el.addEventListener("dragend",e=>{e.stopPropagation();finishDrag();});
     el.addEventListener("dragover",e=>{
       if(!dragId||el.dataset.id===dragId)return;
+      const targetFolder=el.dataset.folderId||null;
+      if(dragType==="folder" && targetFolder)return;
       e.preventDefault();e.stopPropagation();clearHL();
       const pos=posByMouse(el,e,false);
-      el.dataset.dropPos=pos;
-      el.classList.add("drag-over-item",pos==="after"?"drop-after":"drop-before");
+      markLine(el,pos);
     });
     el.addEventListener("dragleave",e=>{if(!el.contains(e.relatedTarget))clearHL();});
     el.addEventListener("drop",async e=>{
@@ -564,10 +583,20 @@ function setupDragDrop(list){
       const pos=el.dataset.dropPos||posByMouse(el,e,false);
       clearHL();
       if(!dragId||targetId===dragId)return;
-      if(targetFolder) await dropToFolder(targetFolder,targetId,pos);
-      else await dropToRoot(targetId,pos);
+      if(targetFolder){
+        if(dragType!=="file")return;
+        await dropToFolder(targetFolder,targetId,pos);
+      }else{
+        await dropToRoot(targetId,pos);
+      }
       loadDayData();
     });
+  });
+
+  // 폴더도 행 전체가 드래그 대상이며, 화살표/삭제 버튼은 제외
+  list.querySelectorAll(".day-folder-row").forEach(row=>{
+    row.addEventListener("dragstart",e=>{e.stopPropagation();startDragFrom(row,e);});
+    row.addEventListener("dragend",e=>{e.stopPropagation();finishDrag();});
   });
 
   list.querySelectorAll(".day-folder").forEach(folderEl=>{
@@ -577,8 +606,8 @@ function setupDragDrop(list){
       e.preventDefault();e.stopPropagation();clearHL();
       const pos=posByMouse(row,e,dragType==="file");
       folderEl.dataset.dropPos=pos;
-      if(pos==="inside")folderEl.classList.add("drag-over-folder");
-      else folderEl.classList.add("drag-over-item",pos==="after"?"drop-after":"drop-before");
+      if(dragType==="file" && pos==="inside")folderEl.classList.add("drop-inside");
+      else markLine(folderEl,pos);
     });
     row.addEventListener("dragleave",e=>{if(!folderEl.contains(e.relatedTarget))clearHL();});
     row.addEventListener("drop",async e=>{
@@ -588,7 +617,7 @@ function setupDragDrop(list){
       if(!dragId||folderEl.dataset.id===dragId)return;
       if(dragType==="file" && pos==="inside"){
         await dropToFolder(folderEl.dataset.id,null,"after");
-        showToast("폴더로 이동됐습니다");
+        showToast("폴더 안으로 이동됐습니다");
       }else{
         await dropToRoot(folderEl.dataset.id,pos==="after"?"after":"before");
       }
@@ -596,12 +625,13 @@ function setupDragDrop(list){
     });
   });
 
+  // 열린 폴더의 빈 공간/아래쪽으로 드롭하면 그 폴더 맨 아래로 이동
   list.querySelectorAll(".day-folder-children").forEach(ch=>{
     ch.addEventListener("dragover",e=>{
       if(!dragId||dragType!=="file")return;
       if(e.target.closest(".day-file-row"))return;
       e.preventDefault();e.stopPropagation();clearHL();
-      ch.classList.add("drag-over-folder");
+      ch.classList.add("drop-inside");
     });
     ch.addEventListener("dragleave",e=>{if(!ch.contains(e.relatedTarget))clearHL();});
     ch.addEventListener("drop",async e=>{
@@ -611,32 +641,24 @@ function setupDragDrop(list){
       clearHL();
       if(!dragId||dragType!=="file")return;
       await dropToFolder(folderId,null,"after");
-      showToast("폴더로 이동됐습니다");loadDayData();
+      showToast("폴더 안으로 이동됐습니다");loadDayData();
     });
   });
 
+  // 목록의 빈 공간으로 드롭하면 루트 맨 아래로 이동
   list.addEventListener("dragover",e=>{
     if(!dragId)return;
     if(e.target.closest(".day-file-row,.day-folder-row,.day-folder-children"))return;
     e.preventDefault();clearHL();
-    list.classList.add("drag-over-folder");
+    list.classList.add("drop-root-empty");
   });
+  list.addEventListener("dragleave",e=>{if(!list.contains(e.relatedTarget))clearHL();});
   list.addEventListener("drop",async e=>{
     if(e.target.closest(".day-file-row,.day-folder-row,.day-folder-children"))return;
     e.preventDefault();
-    list.classList.remove("drag-over-folder");
+    clearHL();
     if(!dragId)return;
-    let pool=rootItemsSorted();
-    const moved=dragType==="file"?dayFiles.find(f=>f.id===dragId):dayFolders.find(f=>f.id===dragId);
-    if(!moved)return;
-    pool=pool.filter(it=>it.id!==dragId);
-    pool.push(moved);
-    const updates=pool.map((it,i)=>{
-      const data={order:i};
-      if(it.id===dragId && dragType==="file")data.folderId=null;
-      return updateDoc(doc(db,"fileItems",it.id),data);
-    });
-    await Promise.all(updates);
+    await dropToRoot(null,"after");
     loadDayData();
   });
 }

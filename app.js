@@ -335,12 +335,12 @@ function renderDayFileList(){
       folderEl.className="day-folder";
       folderEl.dataset.id=item.id;
       folderEl.dataset.type="folder";
-      folderEl.draggable=true;
+      folderEl.draggable=false; // grip에서만 true로
 
       const rowEl=document.createElement("div");
       rowEl.className="day-folder-row";
       rowEl.innerHTML=`
-        <i class="ti ti-grip-vertical" style="color:rgba(255,255,255,.2);font-size:13px"></i>
+        <i class="ti ti-grip-vertical drag-handle" style="color:rgba(255,255,255,.2);font-size:13px;cursor:grab"></i>
         <i class="ti ti-folder day-folder-icon"></i>
         <span class="day-folder-name">${esc(item.title)}</span>
         <span class="day-folder-count">${folderFiles.length}개</span>
@@ -377,6 +377,8 @@ function renderDayFileList(){
       ch.style.display=open?"none":"flex";
       if(!open){ch.style.flexDirection="column";ch.style.gap="4px";}
       btn.querySelector("i").className=`ti ${open?"ti-chevron-down":"ti-chevron-up"}`;
+      // 폴더 열릴 때 안의 파일들에 드래그 이벤트 재등록
+      if(!open) setupDragDrop(list);
     });
   });
 
@@ -407,14 +409,21 @@ function makeFileEl(f, folderId){
   el.dataset.type="file";
   el.dataset.folderId=folderId||"";
   el.dataset.url=f.url||"";
-  el.draggable=true;
+  el.draggable=false; // 기본은 false, grip에서만 true로
   el.innerHTML=`
-    <i class="ti ti-grip-vertical" style="color:rgba(255,255,255,.2);font-size:13px;flex-shrink:0"></i>
+    <i class="ti ti-grip-vertical drag-handle" style="color:rgba(255,255,255,.2);font-size:13px;flex-shrink:0;cursor:grab"></i>
     <i class="ti ${icon} day-file-icon"></i>
     <span class="day-file-name" data-url="${esc(f.url||'')}">${esc(f.title)}</span>
     ${f.note?`<span class="day-file-note">${esc(f.note)}</span>`:''}
     ${canDel?`<button class="day-file-del" data-id="${f.id}"><i class="ti ti-trash"></i></button>`:''}`;
-  // 파일명 클릭 → URL 열기 (여기서 직접 달아야 폴더 안 파일도 동작)
+  // grip 핸들 누를 때만 draggable 켜기
+  const grip=el.querySelector(".drag-handle");
+  if(grip){
+    grip.addEventListener("mousedown",()=>{ el.draggable=true; });
+    grip.addEventListener("mouseup",()=>{ el.draggable=false; });
+  }
+  el.addEventListener("dragend",()=>{ el.draggable=false; });
+  // 파일명 클릭 → URL 열기
   const nameEl=el.querySelector(".day-file-name");
   if(nameEl&&f.url){
     nameEl.addEventListener("click",e=>{e.stopPropagation();window.open(f.url,"_blank");});
@@ -434,15 +443,15 @@ function makeFileEl(f, folderId){
 
 function setupDragDrop(list){
   let dragId=null, dragType=null, dragFromFolder=null;
-  let isDragging=false;
+  let dragAllowed=false; // grip에서만 드래그 허용
 
-  // 루트 드롭존 (폴더 밖으로 빼기)
+  // 루트 드롭존 (폴더 안 파일을 밖으로)
   let rootZone=document.getElementById("rootDropZone");
   if(rootZone) rootZone.remove();
   rootZone=document.createElement("div");
   rootZone.id="rootDropZone";
   rootZone.className="root-drop-zone";
-  rootZone.textContent="여기에 드롭하면 폴더 밖으로 이동";
+  rootZone.textContent="↑ 여기에 드롭하면 폴더 밖으로 이동";
   list.parentElement.insertBefore(rootZone,list);
   rootZone.style.display="none";
 
@@ -464,10 +473,18 @@ function setupDragDrop(list){
     list.querySelectorAll(".drag-over-item,.drag-over-folder").forEach(x=>x.classList.remove("drag-over-item","drag-over-folder"));
   }
 
-  // draggable 요소들에 이벤트 부착
-  list.querySelectorAll("[draggable='true']").forEach(el=>{
+  // grip 핸들에 mousedown → dragAllowed=true
+  list.querySelectorAll(".drag-handle").forEach(grip=>{
+    grip.addEventListener("mousedown",()=>{ dragAllowed=true; });
+  });
+  document.addEventListener("mouseup",()=>{ dragAllowed=false; });
+
+  // 파일/폴더 요소에 drag 이벤트
+  list.querySelectorAll(".day-file-row, .day-folder").forEach(el=>{
+    el.draggable=true;
+
     el.addEventListener("dragstart",e=>{
-      isDragging=true;
+      if(!dragAllowed){ e.preventDefault(); return; }
       dragId=el.dataset.id;
       dragType=el.dataset.type;
       dragFromFolder=el.dataset.folderId||null;
@@ -478,22 +495,22 @@ function setupDragDrop(list){
     });
 
     el.addEventListener("dragend",()=>{
-      isDragging=false;
       el.classList.remove("dragging");
       clearHL();
       rootZone.style.display="none";
       rootZone.classList.remove("drag-over-root");
+      dragAllowed=false;
       dragId=null;dragType=null;dragFromFolder=null;
     });
 
     el.addEventListener("dragover",e=>{
-      if(!isDragging)return;
+      if(!dragId)return;
       e.preventDefault();e.stopPropagation();
       if(el.dataset.id===dragId)return;
       clearHL();
       if(el.dataset.type==="folder"&&dragType==="file"){
         el.classList.add("drag-over-folder");
-      } else if(el.dataset.type!=="folder"||dragType==="folder"){
+      } else {
         el.classList.add("drag-over-item");
       }
     });
@@ -514,7 +531,7 @@ function setupDragDrop(list){
       const tgtFolder=el.dataset.folderId||null;
       const srcFolder=dragFromFolder;
 
-      // 파일 → 폴더로 드롭
+      // 파일 → 폴더로
       if(tgtType==="folder"&&dragType==="file"){
         if(srcFolder===tgtId)return;
         await updateDoc(doc(db,"fileItems",dragId),{folderId:tgtId,order:9999});
@@ -525,15 +542,11 @@ function setupDragDrop(list){
       if(srcFolder===tgtFolder){
         let pool;
         if(srcFolder){
-          // 폴더 안: 파일끼리
           pool=[...dayFiles.filter(f=>f.folderId===srcFolder)].sort((a,b)=>(a.order||0)-(b.order||0));
         } else if(dragType==="folder"&&tgtType==="folder"){
-          // 루트: 폴더끼리
           pool=[...dayFolders].sort((a,b)=>(a.order||0)-(b.order||0));
         } else {
-          // 루트: 파일+폴더 섞인 경우
-          const rootFiles=dayFiles.filter(f=>!f.folderId);
-          pool=[...rootFiles,...dayFolders].sort((a,b)=>(a.order||0)-(b.order||0));
+          pool=[...dayFiles.filter(f=>!f.folderId),...dayFolders].sort((a,b)=>(a.order||0)-(b.order||0));
         }
         const srcIdx=pool.findIndex(x=>x.id===dragId);
         const tgtIdx=pool.findIndex(x=>x.id===tgtId);
@@ -542,7 +555,6 @@ function setupDragDrop(list){
         pool.splice(tgtIdx,0,moved);
         await Promise.all(pool.map((it,i)=>updateDoc(doc(db,"fileItems",it.id),{order:i})));
       } else {
-        // 레벨 이동
         if(srcFolder&&!tgtFolder){
           await updateDoc(doc(db,"fileItems",dragId),{folderId:null,order:9999});
           showToast("루트로 이동됐습니다");
@@ -555,13 +567,13 @@ function setupDragDrop(list){
     });
   });
 
-  // 폴더 row: 파일을 닫힌 폴더에 드롭
+  // 폴더 row: 닫힌 폴더에 파일 드롭
   list.querySelectorAll(".day-folder-row").forEach(row=>{
     const folderEl=row.closest(".day-folder");
     if(!folderEl)return;
     const folderId=folderEl.dataset.id;
     row.addEventListener("dragover",e=>{
-      if(!isDragging||dragType!=="file")return;
+      if(!dragId||dragType!=="file")return;
       e.preventDefault();e.stopPropagation();
       clearHL();
       folderEl.classList.add("drag-over-folder");
@@ -580,7 +592,7 @@ function setupDragDrop(list){
 
   // 폴더 children 드롭존
   list.querySelectorAll(".day-folder-children").forEach(ch=>{
-    ch.addEventListener("dragover",e=>{if(!isDragging)return;e.preventDefault();e.stopPropagation();});
+    ch.addEventListener("dragover",e=>{if(!dragId)return;e.preventDefault();e.stopPropagation();});
     ch.addEventListener("drop",async e=>{
       e.preventDefault();e.stopPropagation();
       if(!dragId||dragType!=="file")return;

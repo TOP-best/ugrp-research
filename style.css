@@ -448,19 +448,7 @@ html,body { height:100%; font-family:var(--font); background:var(--bg); color:va
 .drop-after { box-shadow: inset 0 -2px 0 rgba(99,102,241,.95); }
 .drop-inside > .day-folder-row,
 .day-folder-children.drop-inside {
-  outline:2px solid rgba(16,185,129,.75);
-  background:rgba(16,185,129,.10);
-}
-.drop-inside > .day-folder-row::after {
-  content:"폴더 안으로";
-  margin-left:8px;
-  padding:2px 7px;
-  border-radius:999px;
-  background:rgba(16,185,129,.18);
-  color:#6ee7b7;
-  font-size:11px;
-  font-weight:700;
-  white-space:nowrap;
+  background:rgba(99,102,241,.10);
 }
 .drop-root-empty {
   outline:2px dashed rgba(255,255,255,.28);

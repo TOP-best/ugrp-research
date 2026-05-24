@@ -601,10 +601,18 @@ function setupDragDrop(list){
 
   list.querySelectorAll(".day-folder").forEach(folderEl=>{
     const row=folderEl.querySelector(".day-folder-row");
+
+    function folderRowDropPos(e){
+      // 폴더 안에 있던 파일을 자기 부모 폴더의 헤더 위로 빼낼 때는
+      // “폴더 안으로”가 아니라 루트의 폴더 앞/뒤 이동으로 처리한다.
+      const allowInside=dragType==="file" && dragFromFolder!==folderEl.dataset.id;
+      return posByMouse(row,e,allowInside);
+    }
+
     row.addEventListener("dragover",e=>{
       if(!dragId||folderEl.dataset.id===dragId)return;
       e.preventDefault();e.stopPropagation();clearHL();
-      const pos=posByMouse(row,e,dragType==="file");
+      const pos=folderRowDropPos(e);
       folderEl.dataset.dropPos=pos;
       if(dragType==="file" && pos==="inside")folderEl.classList.add("drop-inside");
       else markLine(folderEl,pos);
@@ -612,7 +620,7 @@ function setupDragDrop(list){
     row.addEventListener("dragleave",e=>{if(!folderEl.contains(e.relatedTarget))clearHL();});
     row.addEventListener("drop",async e=>{
       e.preventDefault();e.stopPropagation();
-      const pos=folderEl.dataset.dropPos||posByMouse(row,e,dragType==="file");
+      const pos=folderEl.dataset.dropPos||folderRowDropPos(e);
       clearHL();
       if(!dragId||folderEl.dataset.id===dragId)return;
       if(dragType==="file" && pos==="inside"){
@@ -621,6 +629,23 @@ function setupDragDrop(list){
       }else{
         await dropToRoot(folderEl.dataset.id,pos==="after"?"after":"before");
       }
+      loadDayData();
+    });
+
+    // 폴더 블록의 빈 부분(파일 목록과 다음 폴더 사이)에 놓으면
+    // 루트에서 해당 폴더 바로 뒤로 이동시켜 폴더 밖으로 빼기 쉽게 한다.
+    folderEl.addEventListener("dragover",e=>{
+      if(!dragId||folderEl.dataset.id===dragId)return;
+      if(e.target.closest(".day-folder-row,.day-file-row,.day-folder-children"))return;
+      e.preventDefault();e.stopPropagation();clearHL();
+      markLine(folderEl,"after");
+    });
+    folderEl.addEventListener("drop",async e=>{
+      if(e.target.closest(".day-folder-row,.day-file-row,.day-folder-children"))return;
+      e.preventDefault();e.stopPropagation();
+      clearHL();
+      if(!dragId||folderEl.dataset.id===dragId)return;
+      await dropToRoot(folderEl.dataset.id,"after");
       loadDayData();
     });
   });
